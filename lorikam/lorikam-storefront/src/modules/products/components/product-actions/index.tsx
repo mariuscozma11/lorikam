@@ -182,11 +182,11 @@ export default function ProductActions({
           isLoading={isAdding}
           data-testid="add-product-button"
         >
-          {!selectedVariant && !options
-            ? "Select variant"
-            : !inStock || !isValidVariant
-            ? "Out of stock"
-            : "Add to cart"}
+          {!selectedVariant || !isValidVariant
+            ? "Selectează varianta"
+            : !inStock
+            ? "Stoc epuizat"
+            : "Adaugă în coș"}
         </Button>
         <MobileActions
           product={product}

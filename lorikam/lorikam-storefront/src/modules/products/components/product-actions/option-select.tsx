@@ -39,7 +39,7 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
   if (isColor && colorMap && Object.keys(colorMap).length > 0) {
     return (
       <div className="flex flex-col gap-y-3">
-        <span className="text-sm">Selecteaza {title}</span>
+        <span className="text-sm">Selectează {title}</span>
         <div
           className="flex flex-wrap gap-3"
           data-testid={dataTestId}
@@ -97,7 +97,7 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
         </div>
         {current && colorMap[current] && (
           <span className="text-xs text-ui-fg-muted">
-            Selectat: {current}
+            Selectată: {current}
           </span>
         )}
       </div>
@@ -107,7 +107,7 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
   // Default text-based option buttons
   return (
     <div className="flex flex-col gap-y-3">
-      <span className="text-sm">Select {title}</span>
+      <span className="text-sm">Selectează {title}</span>
       <div
         className="flex flex-wrap justify-between gap-2"
         data-testid={dataTestId}
