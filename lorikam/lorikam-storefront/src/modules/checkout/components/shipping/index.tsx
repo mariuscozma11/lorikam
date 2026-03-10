@@ -16,8 +16,27 @@ import { useEffect, useState } from "react"
 const PICKUP_OPTION_ON = "__PICKUP_ON"
 const PICKUP_OPTION_OFF = "__PICKUP_OFF"
 
+// Check if free shipping promotion is active
+const FREE_SHIPPING_PROMO_CODE = "FREE_SHIPPING_AUTO"
+
+// Helper to format shipping price - shows "Gratuit" for free shipping
+const formatShippingPrice = (
+  amount: number,
+  currency_code: string,
+  hasFreeShipping: boolean = false
+): string => {
+  if (amount === 0 || hasFreeShipping) {
+    return "Gratuit"
+  }
+  return convertToLocale({ amount, currency_code })
+}
+
+type CartWithPromotions = HttpTypes.StoreCart & {
+  promotions?: HttpTypes.StorePromotion[]
+}
+
 type ShippingProps = {
-  cart: HttpTypes.StoreCart
+  cart: CartWithPromotions
   availableShippingMethods: HttpTypes.StoreCartShippingOption[] | null
 }
 
@@ -69,6 +88,11 @@ const Shipping: React.FC<ShippingProps> = ({
   const pathname = usePathname()
 
   const isOpen = searchParams.get("step") === "delivery"
+
+  // Check if free shipping promotion is active
+  const hasFreeShippingPromo = cart.promotions?.some(
+    (promo) => promo.code === FREE_SHIPPING_PROMO_CODE
+  ) ?? false
 
   const _shippingMethods = availableShippingMethods?.filter(
     (sm) => sm.service_zone?.fulfillment_set?.type !== "pickup"
@@ -161,7 +185,7 @@ const Shipping: React.FC<ShippingProps> = ({
             }
           )}
         >
-          Delivery
+          Livrare
           {!isOpen && (cart.shipping_methods?.length ?? 0) > 0 && (
             <CheckCircleSolid />
           )}
@@ -176,7 +200,7 @@ const Shipping: React.FC<ShippingProps> = ({
                 className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
                 data-testid="edit-delivery-button"
               >
-                Edit
+                Modifică
               </button>
             </Text>
           )}
@@ -186,10 +210,10 @@ const Shipping: React.FC<ShippingProps> = ({
           <div className="grid">
             <div className="flex flex-col">
               <span className="font-medium txt-medium text-ui-fg-base">
-                Shipping method
+                Metodă de livrare
               </span>
               <span className="mb-4 text-ui-fg-muted txt-medium">
-                How would you like you order delivered
+                Cum dorești să fie livrată comanda ta
               </span>
             </div>
             <div data-testid="delivery-options-container">
@@ -223,7 +247,7 @@ const Shipping: React.FC<ShippingProps> = ({
                           checked={showPickupOptions === PICKUP_OPTION_ON}
                         />
                         <span className="text-base-regular">
-                          Pick up your order
+                          Ridicare personală
                         </span>
                       </div>
                       <span className="justify-self-end text-ui-fg-base">
@@ -272,15 +296,17 @@ const Shipping: React.FC<ShippingProps> = ({
                         </div>
                         <span className="justify-self-end text-ui-fg-base">
                           {option.price_type === "flat" ? (
-                            convertToLocale({
-                              amount: option.amount!,
-                              currency_code: cart?.currency_code,
-                            })
-                          ) : calculatedPricesMap[option.id] ? (
-                            convertToLocale({
-                              amount: calculatedPricesMap[option.id],
-                              currency_code: cart?.currency_code,
-                            })
+                            formatShippingPrice(
+                              option.amount!,
+                              cart?.currency_code,
+                              hasFreeShippingPromo
+                            )
+                          ) : calculatedPricesMap[option.id] !== undefined ? (
+                            formatShippingPrice(
+                              calculatedPricesMap[option.id],
+                              cart?.currency_code,
+                              hasFreeShippingPromo
+                            )
                           ) : isLoadingPrices ? (
                             <Loader />
                           ) : (
@@ -299,10 +325,10 @@ const Shipping: React.FC<ShippingProps> = ({
             <div className="grid">
               <div className="flex flex-col">
                 <span className="font-medium txt-medium text-ui-fg-base">
-                  Store
+                  Magazin
                 </span>
                 <span className="mb-4 text-ui-fg-muted txt-medium">
-                  Choose a store near you
+                  Alege un magazin din apropierea ta
                 </span>
               </div>
               <div data-testid="delivery-options-container">
@@ -349,10 +375,11 @@ const Shipping: React.FC<ShippingProps> = ({
                             </div>
                           </div>
                           <span className="justify-self-end text-ui-fg-base">
-                            {convertToLocale({
-                              amount: option.amount!,
-                              currency_code: cart?.currency_code,
-                            })}
+                            {formatShippingPrice(
+                              option.amount!,
+                              cart?.currency_code,
+                              hasFreeShippingPromo
+                            )}
                           </span>
                         </Radio>
                       )
@@ -376,7 +403,7 @@ const Shipping: React.FC<ShippingProps> = ({
               disabled={!cart.shipping_methods?.[0]}
               data-testid="submit-delivery-option-button"
             >
-              Continue to payment
+              Continuă către plată
             </Button>
           </div>
         </>
@@ -386,14 +413,15 @@ const Shipping: React.FC<ShippingProps> = ({
             {cart && (cart.shipping_methods?.length ?? 0) > 0 && (
               <div className="flex flex-col w-1/3">
                 <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                  Method
+                  Metoda
                 </Text>
                 <Text className="txt-medium text-ui-fg-subtle">
                   {cart.shipping_methods!.at(-1)!.name}{" "}
-                  {convertToLocale({
-                    amount: cart.shipping_methods!.at(-1)!.amount!,
-                    currency_code: cart?.currency_code,
-                  })}
+                  {formatShippingPrice(
+                    cart.shipping_methods!.at(-1)!.amount!,
+                    cart?.currency_code,
+                    hasFreeShippingPromo
+                  )}
                 </Text>
               </div>
             )}

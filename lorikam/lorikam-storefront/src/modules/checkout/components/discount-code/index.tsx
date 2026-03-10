@@ -10,6 +10,17 @@ import Trash from "@modules/common/icons/trash"
 import ErrorMessage from "../error-message"
 import { SubmitButton } from "../submit-button"
 
+// Translations for promotion codes
+const PROMOTION_TRANSLATIONS: Record<string, string> = {
+  FREE_SHIPPING_AUTO: "Livrare Gratuită",
+}
+
+// Helper to get display name for promotion code
+const getPromotionDisplayName = (code: string | undefined): string => {
+  if (!code) return ""
+  return PROMOTION_TRANSLATIONS[code] || code
+}
+
 type DiscountCodeProps = {
   cart: HttpTypes.StoreCart & {
     promotions: HttpTypes.StorePromotion[]
@@ -66,7 +77,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
               className="txt-medium text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
               data-testid="add-discount-button"
             >
-              Add Promotion Code(s)
+              Adaugă cod promoțional
             </button>
 
             {/* <Tooltip content="You can add multiple promotion codes">
@@ -89,7 +100,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
                   variant="secondary"
                   data-testid="discount-apply-button"
                 >
-                  Apply
+                  Aplică
                 </SubmitButton>
               </div>
 
@@ -105,7 +116,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
           <div className="w-full flex items-center">
             <div className="flex flex-col w-full">
               <Heading className="txt-medium mb-2">
-                Promotion(s) applied:
+                Promoții aplicate:
               </Heading>
 
               {promotions.map((promotion) => {
@@ -121,7 +132,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
                           color={promotion.is_automatic ? "green" : "grey"}
                           size="small"
                         >
-                          {promotion.code}
+                          {getPromotionDisplayName(promotion.code)}
                         </Badge>{" "}
                         (
                         {promotion.application_method?.value !== undefined &&
@@ -161,7 +172,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
                       >
                         <Trash size={14} />
                         <span className="sr-only">
-                          Remove discount code from order
+                          Șterge codul de reducere
                         </span>
                       </button>
                     )}

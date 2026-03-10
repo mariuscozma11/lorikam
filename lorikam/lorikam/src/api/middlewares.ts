@@ -6,6 +6,7 @@ import {
 import { PostAdminCreateBrand } from "./admin/brands/validators";
 import { z } from "@medusajs/framework/zod";
 import { createFindParams } from "@medusajs/medusa/api/utils/validators";
+import { UpdateShippingSettingsSchema } from "./admin/shipping-settings/validators";
 
 export const GetBrandsSchema = createFindParams();
 
@@ -32,6 +33,11 @@ export default defineMiddlewares({
           isList: true,
         }),
       ],
+    },
+    {
+      matcher: "/admin/shipping-settings",
+      method: "POST",
+      middlewares: [validateAndTransformBody(UpdateShippingSettingsSchema)],
     },
   ],
 });
