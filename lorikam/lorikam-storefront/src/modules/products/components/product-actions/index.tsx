@@ -13,6 +13,8 @@ import ProductPrice from "../product-price"
 import MobileActions from "./mobile-actions"
 import { useRouter } from "next/navigation"
 
+type ColorMap = Record<string, string>
+
 type ProductActionsProps = {
   product: HttpTypes.StoreProduct
   region: HttpTypes.StoreRegion
@@ -120,6 +122,9 @@ export default function ProductActions({
 
   const inView = useIntersection(actionsRef, "0px")
 
+  // Extract color map from product metadata
+  const colorMap = (product.metadata?.color_map as ColorMap) || {}
+
   // add the selected variant to the cart
   const handleAddToCart = async () => {
     if (!selectedVariant?.id) return null
@@ -151,6 +156,7 @@ export default function ProductActions({
                       title={option.title ?? ""}
                       data-testid="product-options"
                       disabled={!!disabled || isAdding}
+                      colorMap={colorMap}
                     />
                   </div>
                 )
@@ -192,6 +198,7 @@ export default function ProductActions({
           isAdding={isAdding}
           show={!inView}
           optionsDisabled={!!disabled || isAdding}
+          colorMap={colorMap}
         />
       </div>
     </>

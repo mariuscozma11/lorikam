@@ -11,6 +11,8 @@ import OptionSelect from "./option-select"
 import { HttpTypes } from "@medusajs/types"
 import { isSimpleProduct } from "@lib/util/product"
 
+type ColorMap = Record<string, string>
+
 type MobileActionsProps = {
   product: HttpTypes.StoreProduct
   variant?: HttpTypes.StoreProductVariant
@@ -21,6 +23,7 @@ type MobileActionsProps = {
   isAdding?: boolean
   show: boolean
   optionsDisabled: boolean
+  colorMap?: ColorMap
 }
 
 const MobileActions: React.FC<MobileActionsProps> = ({
@@ -33,6 +36,7 @@ const MobileActions: React.FC<MobileActionsProps> = ({
   isAdding,
   show,
   optionsDisabled,
+  colorMap,
 }) => {
   const { state, open, close } = useToggleState()
 
@@ -183,6 +187,7 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                                 updateOption={updateOptions}
                                 title={option.title ?? ""}
                                 disabled={optionsDisabled}
+                                colorMap={colorMap}
                               />
                             </div>
                           )
