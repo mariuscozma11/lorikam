@@ -7,6 +7,10 @@ import { PostAdminCreateBrand } from "./admin/brands/validators";
 import { z } from "@medusajs/framework/zod";
 import { createFindParams } from "@medusajs/medusa/api/utils/validators";
 import { UpdateShippingSettingsSchema } from "./admin/shipping-settings/validators";
+import {
+  CreateCustomerDiscountSchema,
+  UpdateCustomerDiscountSchema,
+} from "./admin/customer-discounts/validators";
 
 export const GetBrandsSchema = createFindParams();
 
@@ -38,6 +42,16 @@ export default defineMiddlewares({
       matcher: "/admin/shipping-settings",
       method: "POST",
       middlewares: [validateAndTransformBody(UpdateShippingSettingsSchema)],
+    },
+    {
+      matcher: "/admin/customer-discounts",
+      method: "POST",
+      middlewares: [validateAndTransformBody(CreateCustomerDiscountSchema)],
+    },
+    {
+      matcher: "/admin/customer-discounts/:customer_id",
+      method: "PUT",
+      middlewares: [validateAndTransformBody(UpdateCustomerDiscountSchema)],
     },
   ],
 });

@@ -21,5 +21,8 @@ module.exports = defineConfig({
     {
       resolve: "./src/modules/shipping-settings",
     },
+    {
+      resolve: "./src/modules/customer-discount",
+    },
   ],
 });

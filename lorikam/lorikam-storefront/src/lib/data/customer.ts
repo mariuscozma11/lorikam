@@ -259,3 +259,32 @@ export const updateCustomerAddress = async (
       return { success: false, error: err.toString() }
     })
 }
+
+export type CustomerDiscount = {
+  discount_percentage: number
+  is_active: boolean
+}
+
+export type CustomerDiscountResponse = {
+  customer_discount: CustomerDiscount | null
+  promotion_code: string | null
+}
+
+export const getCustomerDiscount =
+  async (): Promise<CustomerDiscountResponse | null> => {
+    const authHeaders = await getAuthHeaders()
+
+    if (!authHeaders) return null
+
+    const headers = {
+      ...authHeaders,
+    }
+
+    return await sdk.client
+      .fetch<CustomerDiscountResponse>(`/store/customer-discount`, {
+        method: "GET",
+        headers,
+      })
+      .then((response) => response)
+      .catch(() => null)
+  }

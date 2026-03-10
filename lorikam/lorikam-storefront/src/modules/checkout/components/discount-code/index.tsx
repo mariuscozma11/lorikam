@@ -1,9 +1,10 @@
 "use client"
 
 import { Badge, Heading, Input, Label, Text } from "@medusajs/ui"
-import React from "react"
+import React, { useEffect, useRef } from "react"
 
 import { applyPromotions } from "@lib/data/cart"
+import { getCustomerDiscount } from "@lib/data/customer"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 import Trash from "@modules/common/icons/trash"
@@ -18,6 +19,10 @@ const PROMOTION_TRANSLATIONS: Record<string, string> = {
 // Helper to get display name for promotion code
 const getPromotionDisplayName = (code: string | undefined): string => {
   if (!code) return ""
+  // Check for collaborator discount codes (COLLAB_XXXXXXXX)
+  if (code.startsWith("COLLAB_")) {
+    return "Reducere Colaborator"
+  }
   return PROMOTION_TRANSLATIONS[code] || code
 }
 
@@ -30,8 +35,43 @@ type DiscountCodeProps = {
 const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
   const [isOpen, setIsOpen] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState("")
+  const hasAutoApplied = useRef(false)
 
   const { promotions = [] } = cart
+
+  // Auto-apply customer's collaborator discount if available
+  useEffect(() => {
+    const applyCustomerDiscount = async () => {
+      // Only try once per component mount
+      if (hasAutoApplied.current) return
+      hasAutoApplied.current = true
+
+      try {
+        const discountData = await getCustomerDiscount()
+        if (!discountData?.promotion_code) return
+
+        // Check if the discount is already applied
+        const isAlreadyApplied = promotions.some(
+          (p) => p.code === discountData.promotion_code
+        )
+        if (isAlreadyApplied) return
+
+        // Apply the customer's discount code
+        const codes = promotions
+          .filter((p) => p.code !== undefined)
+          .map((p) => p.code!)
+        codes.push(discountData.promotion_code)
+
+        await applyPromotions(codes)
+      } catch (error) {
+        // Silently fail - customer might not have a discount
+        console.log("Could not auto-apply customer discount:", error)
+      }
+    }
+
+    applyCustomerDiscount()
+  }, []) // Only run once on mount
+
   const removePromotionCode = async (code: string) => {
     const validPromotions = promotions.filter(
       (promotion) => promotion.code !== code
