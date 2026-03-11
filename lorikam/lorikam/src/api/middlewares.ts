@@ -2,17 +2,17 @@ import {
   defineMiddlewares,
   validateAndTransformBody,
   validateAndTransformQuery,
-} from "@medusajs/framework";
-import { PostAdminCreateBrand } from "./admin/brands/validators";
-import { z } from "@medusajs/framework/zod";
-import { createFindParams } from "@medusajs/medusa/api/utils/validators";
-import { UpdateShippingSettingsSchema } from "./admin/shipping-settings/validators";
+} from "@medusajs/framework"
+import { PostAdminCreateBrand } from "./admin/brands/validators"
+import { z } from "@medusajs/framework/zod"
+import { createFindParams } from "@medusajs/medusa/api/utils/validators"
+import { UpdateShippingSettingsSchema } from "./admin/shipping-settings/validators"
 import {
   CreateCustomerDiscountSchema,
   UpdateCustomerDiscountSchema,
-} from "./admin/customer-discounts/validators";
+} from "./admin/customer-discounts/validators"
 
-export const GetBrandsSchema = createFindParams();
+export const GetBrandsSchema = createFindParams()
 
 export default defineMiddlewares({
   routes: [
@@ -54,4 +54,4 @@ export default defineMiddlewares({
       middlewares: [validateAndTransformBody(UpdateCustomerDiscountSchema)],
     },
   ],
-});
+})

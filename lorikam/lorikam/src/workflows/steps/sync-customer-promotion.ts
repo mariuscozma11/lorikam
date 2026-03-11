@@ -53,7 +53,7 @@ export const syncCustomerPromotionStep = createStep(
 
     // Create new promotion for this customer
     // Using is_automatic: false so the customer needs to "apply" it
-    // But since the code is unique to them, it's effectively tied to their account
+    // The customer_id rule ensures only this customer can use the code
     const newPromo = await promotionService.createPromotions({
       code: promoCode,
       type: "standard",
@@ -64,6 +64,11 @@ export const syncCustomerPromotionStep = createStep(
           attribute: "currency_code",
           operator: "in",
           values: ["ron", "RON", "eur", "EUR"],
+        },
+        {
+          attribute: "customer_id",
+          operator: "eq",
+          values: [input.customer_id],
         },
       ],
       application_method: {
