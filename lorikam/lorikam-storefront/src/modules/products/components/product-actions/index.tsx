@@ -61,11 +61,12 @@ export default function ProductActions({
     })
   }, [product.variants, options])
 
-  // update the options when a variant is selected
+  // update the options when a variant is selected/deselected
   const setOptionValue = (optionId: string, value: string) => {
     setOptions((prev) => ({
       ...prev,
-      [optionId]: value,
+      // Empty string means deselection - set to undefined
+      [optionId]: value === "" ? undefined : value,
     }))
   }
 

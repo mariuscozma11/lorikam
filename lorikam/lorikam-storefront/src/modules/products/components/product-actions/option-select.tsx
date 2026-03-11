@@ -214,7 +214,11 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
               // Render color swatch (supports single and composed colors)
               return (
                 <button
-                  onClick={() => !isUnavailable && updateOption(option.id, v)}
+                  onClick={() => {
+                    if (isUnavailable) return
+                    // Toggle: deselect if already selected, otherwise select
+                    updateOption(option.id, isSelected ? "" : v)
+                  }}
                   key={v}
                   className={clx(
                     "relative w-10 h-10 rounded-full border-2 transition-all duration-150 overflow-hidden",
@@ -241,7 +245,10 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
             // Fallback to text button if no valid hex color
             return (
               <button
-                onClick={() => !isUnavailable && updateOption(option.id, v)}
+                onClick={() => {
+                  if (isUnavailable) return
+                  updateOption(option.id, isSelected ? "" : v)
+                }}
                 key={v}
                 className={clx(
                   "relative border-ui-border-base bg-ui-bg-subtle border text-small-regular h-10 rounded-rounded p-2 flex-1 min-w-[60px]",
@@ -301,7 +308,10 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
 
           return (
             <button
-              onClick={() => !isUnavailable && updateOption(option.id, v)}
+              onClick={() => {
+                if (isUnavailable) return
+                updateOption(option.id, isSelected ? "" : v)
+              }}
               key={v}
               className={clx(
                 "relative border-ui-border-base bg-ui-bg-subtle border text-small-regular h-10 rounded-rounded p-2 flex-1",

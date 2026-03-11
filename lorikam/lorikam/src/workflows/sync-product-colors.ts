@@ -236,23 +236,25 @@ export const syncProductColorsStep = createStep(
         }
       }
 
-      // Collect all unique variant IDs from the option maps
-      const allVariantIds = new Set<string>()
-      for (const [, valueMap] of optionValueToVariant) {
-        for (const [, variantId] of valueMap) {
-          allVariantIds.add(variantId)
-        }
-      }
+      // Get base variants (existing variants without color option)
+      // These represent the valid option combinations we should extend with colors
+      const baseVariants = existingVariants.filter((v: any) => {
+        // Check if this variant has the color option
+        const hasColorOption = (v.options || []).some(
+          (o: any) => o.option_id === colorOption?.id
+        )
+        return !hasColorOption
+      })
 
-      // Fetch prices for existing variants using query.graph
+      // Fetch prices for ALL base variants (not just the ones in optionValueToVariant)
       const variantIdToPrices: Map<string, any[]> = new Map()
+      const baseVariantIds = baseVariants.map((v: any) => v.id)
 
-      if (allVariantIds.size > 0) {
+      if (baseVariantIds.length > 0) {
         try {
-          const variantIds = Array.from(allVariantIds)
           const { data: variantsWithPriceData } = await query.graph({
             entity: "variant",
-            filters: { id: variantIds },
+            filters: { id: baseVariantIds },
             fields: ["id", "price_set.prices.*"],
           })
 
@@ -272,16 +274,6 @@ export const syncProductColorsStep = createStep(
       for (const option of allOptions) {
         optionIdToTitle[option.id] = option.title
       }
-
-      // Get base variants (existing variants without color option)
-      // These represent the valid option combinations we should extend with colors
-      const baseVariants = existingVariants.filter((v: any) => {
-        // Check if this variant has the color option
-        const hasColorOption = (v.options || []).some(
-          (o: any) => o.option_id === colorOption?.id
-        )
-        return !hasColorOption
-      })
 
       // Also track existing variants WITH colors to avoid duplicates
       const existingVariantKeys = new Set(
