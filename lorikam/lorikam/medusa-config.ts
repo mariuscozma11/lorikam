@@ -24,5 +24,8 @@ module.exports = defineConfig({
     {
       resolve: "./src/modules/customer-discount",
     },
+    {
+      resolve: "./src/modules/color",
+    },
   ],
 });

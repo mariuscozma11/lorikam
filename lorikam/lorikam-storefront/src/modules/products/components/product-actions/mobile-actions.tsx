@@ -188,6 +188,8 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                                 title={option.title ?? ""}
                                 disabled={optionsDisabled}
                                 colorMap={colorMap}
+                                variants={product.variants}
+                                currentOptions={options}
                               />
                             </div>
                           )

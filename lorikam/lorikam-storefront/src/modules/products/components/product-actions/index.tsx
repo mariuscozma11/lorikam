@@ -157,6 +157,8 @@ export default function ProductActions({
                       data-testid="product-options"
                       disabled={!!disabled || isAdding}
                       colorMap={colorMap}
+                      variants={product.variants}
+                      currentOptions={options}
                     />
                   </div>
                 )
