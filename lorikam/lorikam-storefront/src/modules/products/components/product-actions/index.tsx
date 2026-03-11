@@ -44,6 +44,7 @@ export default function ProductActions({
 
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
   const [isAdding, setIsAdding] = useState(false)
+  const [quantity, setQuantity] = useState(1)
   const [customizationValues, setCustomizationValues] = useState<Record<string, string>>({})
   const [customizationErrors, setCustomizationErrors] = useState<Record<string, string>>({})
   const countryCode = useParams().countryCode as string
@@ -75,6 +76,13 @@ export default function ProductActions({
       return isEqual(variantOptions, options)
     })
   }, [product.variants, options])
+
+  // Max quantity based on inventory
+  const maxQuantity = useMemo(() => {
+    if (!selectedVariant?.manage_inventory) return 10
+    if (selectedVariant?.allow_backorder) return 10
+    return Math.min(selectedVariant?.inventory_quantity || 1, 10)
+  }, [selectedVariant])
 
   // update the options when a variant is selected/deselected
   const setOptionValue = (optionId: string, value: string) => {
@@ -168,16 +176,17 @@ export default function ProductActions({
 
     await addToCart({
       variantId: selectedVariant.id,
-      quantity: 1,
+      quantity,
       countryCode,
       metadata,
     })
 
-    // Reset customization values after adding to cart
+    // Reset customization values and quantity after adding to cart
     if (customizationFields.length > 0) {
       setCustomizationValues({})
       setCustomizationErrors({})
     }
+    setQuantity(1)
 
     setIsAdding(false)
   }
@@ -226,27 +235,55 @@ export default function ProductActions({
           </>
         )}
 
-        <Button
-          onClick={handleAddToCart}
-          disabled={
-            !inStock ||
-            !selectedVariant ||
-            !!disabled ||
-            isAdding ||
-            !isValidVariant ||
-            !isCustomizationValid
-          }
-          variant="primary"
-          className="w-full h-10"
-          isLoading={isAdding}
-          data-testid="add-product-button"
-        >
-          {!selectedVariant || !isValidVariant
-            ? "Selectează varianta"
-            : !inStock
-            ? "Stoc epuizat"
-            : "Adaugă în coș"}
-        </Button>
+        <div className="flex items-center gap-x-4">
+          {/* Quantity Controls */}
+          {selectedVariant && inStock && (
+            <div className="flex items-center border border-ui-border-base rounded-md">
+              <button
+                type="button"
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                disabled={quantity <= 1 || !!disabled || isAdding}
+                className="w-10 h-10 flex items-center justify-center text-ui-fg-base hover:bg-ui-bg-base-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="Scade cantitatea"
+              >
+                −
+              </button>
+              <span className="w-12 text-center text-ui-fg-base font-medium">
+                {quantity}
+              </span>
+              <button
+                type="button"
+                onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+                disabled={quantity >= maxQuantity || !!disabled || isAdding}
+                className="w-10 h-10 flex items-center justify-center text-ui-fg-base hover:bg-ui-bg-base-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="Crește cantitatea"
+              >
+                +
+              </button>
+            </div>
+          )}
+          <Button
+            onClick={handleAddToCart}
+            disabled={
+              !inStock ||
+              !selectedVariant ||
+              !!disabled ||
+              isAdding ||
+              !isValidVariant ||
+              !isCustomizationValid
+            }
+            variant="primary"
+            className="flex-1 h-10"
+            isLoading={isAdding}
+            data-testid="add-product-button"
+          >
+            {!selectedVariant || !isValidVariant
+              ? "Selectează varianta"
+              : !inStock
+              ? "Stoc epuizat"
+              : "Adaugă în coș"}
+          </Button>
+        </div>
         <MobileActions
           product={product}
           variant={selectedVariant}
@@ -258,6 +295,9 @@ export default function ProductActions({
           show={!inView}
           optionsDisabled={!!disabled || isAdding}
           colorMap={colorMap}
+          quantity={quantity}
+          setQuantity={setQuantity}
+          maxQuantity={maxQuantity}
         />
       </div>
     </>

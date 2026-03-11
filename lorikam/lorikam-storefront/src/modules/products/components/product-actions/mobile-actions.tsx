@@ -24,6 +24,9 @@ type MobileActionsProps = {
   show: boolean
   optionsDisabled: boolean
   colorMap?: ColorMap
+  quantity: number
+  setQuantity: (fn: (q: number) => number) => void
+  maxQuantity: number
 }
 
 const MobileActions: React.FC<MobileActionsProps> = ({
@@ -37,6 +40,9 @@ const MobileActions: React.FC<MobileActionsProps> = ({
   show,
   optionsDisabled,
   colorMap,
+  quantity,
+  setQuantity,
+  maxQuantity,
 }) => {
   const { state, open, close } = useToggleState()
 
@@ -102,6 +108,35 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                 <div></div>
               )}
             </div>
+            {/* Quantity Controls */}
+            {variant && inStock && (
+              <div className="flex items-center gap-x-2">
+                <span className="text-sm text-ui-fg-subtle">Cantitate:</span>
+                <div className="flex items-center border border-ui-border-base rounded-md">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    disabled={quantity <= 1 || optionsDisabled}
+                    className="w-8 h-8 flex items-center justify-center text-ui-fg-base hover:bg-ui-bg-base-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Scade cantitatea"
+                  >
+                    −
+                  </button>
+                  <span className="w-8 text-center text-ui-fg-base font-medium text-sm">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+                    disabled={quantity >= maxQuantity || optionsDisabled}
+                    className="w-8 h-8 flex items-center justify-center text-ui-fg-base hover:bg-ui-bg-base-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Crește cantitatea"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            )}
             <div className={clx("grid grid-cols-2 w-full gap-x-4", {
               "!grid-cols-1": isSimple
             })}>
