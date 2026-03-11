@@ -10,7 +10,7 @@ export default function ProductPrice({
   product: HttpTypes.StoreProduct
   variant?: HttpTypes.StoreProductVariant
 }) {
-  const { cheapestPrice, variantPrice } = getProductPrice({
+  const { cheapestPrice, variantPrice, hasMultiplePrices } = getProductPrice({
     product,
     variantId: variant?.id,
   })
@@ -21,6 +21,9 @@ export default function ProductPrice({
     return <div className="block w-32 h-9 bg-gray-100 animate-pulse" />
   }
 
+  // Show "de la" only when no variant selected AND there are multiple different prices
+  const showFromPrice = !variant && hasMultiplePrices
+
   return (
     <div className="flex flex-col text-ui-fg-base">
       <span
@@ -28,7 +31,7 @@ export default function ProductPrice({
           "text-ui-fg-interactive": selectedPrice.price_type === "sale",
         })}
       >
-        {!variant && "de la "}
+        {showFromPrice && "de la "}
         <span
           data-testid="product-price"
           data-value={selectedPrice.calculated_price_number}

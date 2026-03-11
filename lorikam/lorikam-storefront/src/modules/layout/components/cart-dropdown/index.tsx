@@ -135,7 +135,7 @@ const CartDropdown = ({
                           className="w-24"
                         >
                           <Thumbnail
-                            thumbnail={item.thumbnail}
+                            thumbnail={(item.variant as any)?.images?.[0]?.url || item.thumbnail}
                             images={item.variant?.product?.images}
                             size="square"
                           />

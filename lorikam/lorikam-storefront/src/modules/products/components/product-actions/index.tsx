@@ -6,6 +6,10 @@ import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
 import Divider from "@modules/common/components/divider"
 import OptionSelect from "@modules/products/components/product-actions/option-select"
+import CustomizationFields, {
+  CustomizationField,
+  validateCustomizationFields,
+} from "@modules/products/components/customization-fields"
 import { isEqual } from "lodash"
 import { useParams, usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -40,7 +44,18 @@ export default function ProductActions({
 
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
   const [isAdding, setIsAdding] = useState(false)
+  const [customizationValues, setCustomizationValues] = useState<Record<string, string>>({})
+  const [customizationErrors, setCustomizationErrors] = useState<Record<string, string>>({})
   const countryCode = useParams().countryCode as string
+
+  // Extract customization fields from product metadata
+  const customizationFields = useMemo(() => {
+    const fields = product.metadata?.customization_fields
+    if (Array.isArray(fields)) {
+      return fields as CustomizationField[]
+    }
+    return []
+  }, [product.metadata])
 
   // If there is only 1 variant, preselect the options
   useEffect(() => {
@@ -126,17 +141,43 @@ export default function ProductActions({
   // Extract color map from product metadata
   const colorMap = (product.metadata?.color_map as ColorMap) || {}
 
+  // Check if customization is valid
+  const isCustomizationValid = useMemo(() => {
+    if (customizationFields.length === 0) return true
+    const { isValid } = validateCustomizationFields(customizationFields, customizationValues)
+    return isValid
+  }, [customizationFields, customizationValues])
+
   // add the selected variant to the cart
   const handleAddToCart = async () => {
     if (!selectedVariant?.id) return null
 
+    // Validate customization fields if present
+    if (customizationFields.length > 0) {
+      const { isValid, errors } = validateCustomizationFields(customizationFields, customizationValues)
+      setCustomizationErrors(errors)
+      if (!isValid) return null
+    }
+
     setIsAdding(true)
+
+    // Build metadata with customizations if present
+    const metadata = customizationFields.length > 0
+      ? { customizations: customizationValues }
+      : undefined
 
     await addToCart({
       variantId: selectedVariant.id,
       quantity: 1,
       countryCode,
+      metadata,
     })
+
+    // Reset customization values after adding to cart
+    if (customizationFields.length > 0) {
+      setCustomizationValues({})
+      setCustomizationErrors({})
+    }
 
     setIsAdding(false)
   }
@@ -171,6 +212,20 @@ export default function ProductActions({
 
         <ProductPrice product={product} variant={selectedVariant} />
 
+        {/* Customization Fields */}
+        {customizationFields.length > 0 && (
+          <>
+            <Divider />
+            <CustomizationFields
+              fields={customizationFields}
+              values={customizationValues}
+              onChange={setCustomizationValues}
+              errors={customizationErrors}
+              disabled={!!disabled || isAdding}
+            />
+          </>
+        )}
+
         <Button
           onClick={handleAddToCart}
           disabled={
@@ -178,7 +233,8 @@ export default function ProductActions({
             !selectedVariant ||
             !!disabled ||
             isAdding ||
-            !isValidVariant
+            !isValidVariant ||
+            !isCustomizationValid
           }
           variant="primary"
           className="w-full h-10"

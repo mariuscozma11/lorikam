@@ -55,7 +55,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
           })}
         >
           <Thumbnail
-            thumbnail={item.thumbnail}
+            thumbnail={(item.variant as any)?.images?.[0]?.url || item.thumbnail}
             images={item.variant?.product?.images}
             size="square"
           />
@@ -70,6 +70,19 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
           {item.product_title}
         </Text>
         <LineItemOptions variant={item.variant} data-testid="product-variant" />
+        {/* Display customizations if present */}
+        {item.metadata?.customizations && (
+          <div className="mt-1">
+            {Object.entries(item.metadata.customizations as Record<string, string>).map(([key, value]) => (
+              <Text
+                key={key}
+                className="txt-small text-ui-fg-muted"
+              >
+                {key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}: {value}
+              </Text>
+            ))}
+          </div>
+        )}
       </Table.Cell>
 
       {type === "full" && (

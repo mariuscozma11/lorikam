@@ -24,7 +24,7 @@ export default async function ProductPreview({
   //   return null
   // }
 
-  const { cheapestPrice } = getProductPrice({
+  const { cheapestPrice, hasMultiplePrices } = getProductPrice({
     product,
   })
 
@@ -34,15 +34,14 @@ export default async function ProductPreview({
         <Thumbnail
           thumbnail={product.thumbnail}
           images={product.images}
-          size="full"
-          isFeatured={isFeatured}
+          size="square"
         />
         <div className="flex txt-compact-medium mt-4 justify-between">
           <Text className="text-ui-fg-subtle" data-testid="product-title">
             {product.title}
           </Text>
           <div className="flex items-center gap-x-2">
-            {cheapestPrice && <PreviewPrice price={cheapestPrice} />}
+            {cheapestPrice && <PreviewPrice price={cheapestPrice} hasMultiplePrices={hasMultiplePrices} />}
           </div>
         </div>
       </div>

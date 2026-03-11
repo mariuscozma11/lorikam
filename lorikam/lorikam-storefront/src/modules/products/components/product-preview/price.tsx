@@ -1,7 +1,13 @@
 import { Text, clx } from "@medusajs/ui"
 import { VariantPrice } from "types/global"
 
-export default async function PreviewPrice({ price }: { price: VariantPrice }) {
+export default async function PreviewPrice({
+  price,
+  hasMultiplePrices,
+}: {
+  price: VariantPrice
+  hasMultiplePrices?: boolean
+}) {
   if (!price) {
     return null
   }
@@ -22,6 +28,7 @@ export default async function PreviewPrice({ price }: { price: VariantPrice }) {
         })}
         data-testid="price"
       >
+        {hasMultiplePrices && "de la "}
         {price.calculated_price}
       </Text>
     </>

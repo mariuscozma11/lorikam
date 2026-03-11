@@ -71,9 +71,25 @@ export function getProductPrice({
     return getPricesForVariant(variant)
   }
 
+  // Check if there are multiple different prices across variants
+  const hasMultiplePrices = () => {
+    if (!product?.variants?.length) return false
+
+    const prices = product.variants
+      .filter((v: any) => !!v.calculated_price?.calculated_amount)
+      .map((v: any) => v.calculated_price.calculated_amount)
+
+    if (prices.length <= 1) return false
+
+    // Check if all prices are the same
+    const uniquePrices = new Set(prices)
+    return uniquePrices.size > 1
+  }
+
   return {
     product,
     cheapestPrice: cheapestPrice(),
     variantPrice: variantPrice(),
+    hasMultiplePrices: hasMultiplePrices(),
   }
 }

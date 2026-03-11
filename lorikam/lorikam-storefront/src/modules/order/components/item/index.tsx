@@ -16,7 +16,10 @@ const Item = ({ item, currencyCode }: ItemProps) => {
     <Table.Row className="w-full" data-testid="product-row">
       <Table.Cell className="!pl-0 p-4 w-24">
         <div className="flex w-16">
-          <Thumbnail thumbnail={item.thumbnail} size="square" />
+          <Thumbnail
+            thumbnail={(item.variant as any)?.images?.[0]?.url || item.thumbnail}
+            size="square"
+          />
         </div>
       </Table.Cell>
 
@@ -28,6 +31,19 @@ const Item = ({ item, currencyCode }: ItemProps) => {
           {item.product_title}
         </Text>
         <LineItemOptions variant={item.variant} data-testid="product-variant" />
+        {/* Display customizations if present */}
+        {item.metadata?.customizations && (
+          <div className="mt-1">
+            {Object.entries(item.metadata.customizations as Record<string, string>).map(([key, value]) => (
+              <Text
+                key={key}
+                className="txt-small text-ui-fg-muted"
+              >
+                {key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}: {value}
+              </Text>
+            ))}
+          </div>
+        )}
       </Table.Cell>
 
       <Table.Cell className="!pr-0">
