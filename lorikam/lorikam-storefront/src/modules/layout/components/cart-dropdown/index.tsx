@@ -35,7 +35,17 @@ const CartDropdown = ({
       return acc + item.quantity
     }, 0) || 0
 
-  const subtotal = cartState?.subtotal ?? 0
+  // Calculate original subtotal from items (before discounts)
+  const originalSubtotal =
+    cartState?.items?.reduce((acc, item) => {
+      return acc + (item.original_total ?? item.total ?? 0)
+    }, 0) ?? 0
+  // Discounted subtotal - calculate from items for consistency
+  const discountedSubtotal =
+    cartState?.items?.reduce((acc, item) => {
+      return acc + (item.total ?? 0)
+    }, 0) ?? 0
+  const hasDiscount = originalSubtotal > discountedSubtotal && discountedSubtotal > 0
   const itemRef = useRef<number>(totalItems || 0)
 
   const timedOpen = () => {
@@ -85,7 +95,7 @@ const CartDropdown = ({
             className="hover:text-ui-fg-base"
             href="/cart"
             data-testid="nav-cart-link"
-          >{`Cart (${totalItems})`}</LocalizedClientLink>
+          >{`Coș (${totalItems})`}</LocalizedClientLink>
         </PopoverButton>
         <Transition
           show={cartDropdownOpen}
@@ -103,7 +113,7 @@ const CartDropdown = ({
             data-testid="nav-cart-dropdown"
           >
             <div className="p-4 flex items-center justify-center">
-              <h3 className="text-large-semi">Cart</h3>
+              <h3 className="text-large-semi">Coș</h3>
             </div>
             {cartState && cartState.items?.length ? (
               <>
@@ -151,7 +161,7 @@ const CartDropdown = ({
                                   data-testid="cart-item-quantity"
                                   data-value={item.quantity}
                                 >
-                                  Quantity: {item.quantity}
+                                  Cantitate: {item.quantity}
                                 </span>
                               </div>
                               <div className="flex justify-end">
@@ -168,7 +178,7 @@ const CartDropdown = ({
                             className="mt-1"
                             data-testid="cart-item-remove-button"
                           >
-                            Remove
+                            Șterge
                           </DeleteButton>
                         </div>
                       </div>
@@ -178,17 +188,27 @@ const CartDropdown = ({
                   <div className="flex items-center justify-between">
                     <span className="text-ui-fg-base font-semibold">
                       Subtotal{" "}
-                      <span className="font-normal">(excl. taxes)</span>
+                      <span className="font-normal">(fără taxe)</span>
                     </span>
                     <span
-                      className="text-large-semi"
+                      className="text-large-semi flex flex-col items-end"
                       data-testid="cart-subtotal"
-                      data-value={subtotal}
+                      data-value={discountedSubtotal}
                     >
-                      {convertToLocale({
-                        amount: subtotal,
-                        currency_code: cartState.currency_code,
-                      })}
+                      {hasDiscount && (
+                        <span className="line-through text-ui-fg-muted text-small-regular">
+                          {convertToLocale({
+                            amount: originalSubtotal,
+                            currency_code: cartState.currency_code,
+                          })}
+                        </span>
+                      )}
+                      <span className={hasDiscount ? "text-ui-fg-interactive" : ""}>
+                        {convertToLocale({
+                          amount: discountedSubtotal,
+                          currency_code: cartState.currency_code,
+                        })}
+                      </span>
                     </span>
                   </div>
                   <LocalizedClientLink href="/cart" passHref>
@@ -197,7 +217,7 @@ const CartDropdown = ({
                       size="large"
                       data-testid="go-to-cart-button"
                     >
-                      Go to cart
+                      Vezi coșul
                     </Button>
                   </LocalizedClientLink>
                 </div>
@@ -208,12 +228,12 @@ const CartDropdown = ({
                   <div className="bg-gray-900 text-small-regular flex items-center justify-center w-6 h-6 rounded-full text-white">
                     <span>0</span>
                   </div>
-                  <span>Your shopping bag is empty.</span>
+                  <span>Coșul tău este gol.</span>
                   <div>
                     <LocalizedClientLink href="/store">
                       <>
-                        <span className="sr-only">Go to all products page</span>
-                        <Button onClick={close}>Explore products</Button>
+                        <span className="sr-only">Mergi la pagina cu produse</span>
+                        <Button onClick={close}>Explorează produse</Button>
                       </>
                     </LocalizedClientLink>
                   </div>
