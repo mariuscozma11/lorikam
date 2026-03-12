@@ -268,6 +268,7 @@ export type CustomerDiscount = {
 export type CustomerDiscountResponse = {
   customer_discount: CustomerDiscount | null
   promotion_code: string | null
+  is_collaborator: boolean
 }
 
 export const getCustomerDiscount =
