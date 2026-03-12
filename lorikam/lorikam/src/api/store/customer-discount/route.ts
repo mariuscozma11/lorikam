@@ -31,6 +31,7 @@ export const GET = async (
     return res.json({
       customer_discount: null,
       promotion_code: null,
+      is_collaborator: discount?.is_collaborator ?? false,
     })
   }
 
@@ -42,5 +43,6 @@ export const GET = async (
       is_active: discount.is_active,
     },
     promotion_code: promotionCode,
+    is_collaborator: discount.is_collaborator ?? false,
   })
 }

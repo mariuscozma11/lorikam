@@ -29,7 +29,7 @@ export const POST = async (
   const customerDiscountService: CustomerDiscountModuleService =
     req.scope.resolve(CUSTOMER_DISCOUNT_MODULE)
 
-  const { customer_id, discount_percentage, is_active, notes } = req.validatedBody
+  const { customer_id, discount_percentage, is_active, is_collaborator, notes } = req.validatedBody
 
   // Check if a discount already exists for this customer
   const [existingDiscount] = await customerDiscountService.listCustomerDiscounts({
@@ -43,6 +43,7 @@ export const POST = async (
       id: existingDiscount.id,
       discount_percentage,
       is_active: is_active ?? true,
+      is_collaborator: is_collaborator ?? false,
       notes,
     })
   } else {
@@ -51,6 +52,7 @@ export const POST = async (
       customer_id,
       discount_percentage,
       is_active: is_active ?? true,
+      is_collaborator: is_collaborator ?? false,
       notes,
     })
   }

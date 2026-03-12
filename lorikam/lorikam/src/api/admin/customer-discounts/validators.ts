@@ -4,6 +4,7 @@ export const CreateCustomerDiscountSchema = z.object({
   customer_id: z.string().min(1),
   discount_percentage: z.number().min(0).max(100),
   is_active: z.boolean().optional().default(true),
+  is_collaborator: z.boolean().optional().default(false),
   notes: z.string().optional().nullable(),
 })
 

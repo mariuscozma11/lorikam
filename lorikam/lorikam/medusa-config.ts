@@ -16,9 +16,6 @@ module.exports = defineConfig({
   },
   modules: [
     {
-      resolve: "./src/modules/brand",
-    },
-    {
       resolve: "./src/modules/shipping-settings",
     },
     {
