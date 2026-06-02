@@ -15,7 +15,7 @@ const StoreTemplate = ({
       data-testid="category-container"
     >
       <div className="mb-8 text-2xl-semi">
-        <h1 data-testid="store-page-title">All products</h1>
+        <h1 data-testid="store-page-title">Toate produsele</h1>
       </div>
       <Suspense fallback={<SkeletonProductGrid />}>
         <PaginatedProducts countryCode={countryCode} />

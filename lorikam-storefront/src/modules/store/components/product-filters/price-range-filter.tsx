@@ -105,7 +105,7 @@ export default function PriceRangeFilter({
   const maxPercent = ((sliderMax - min) / range) * 100
 
   return (
-    <FilterSection title="Pret">
+    <FilterSection title="Preț">
       <div className="space-y-4">
         {/* Dual Range Slider */}
         <div className="relative h-6 px-2">
@@ -151,7 +151,7 @@ export default function PriceRangeFilter({
         {/* Input fields */}
         <div className="flex items-center gap-2">
           <div className="flex-1">
-            <label className="sr-only">Pret minim</label>
+            <label className="sr-only">Preț minim</label>
             <div className="relative">
               <input
                 type="number"
@@ -171,7 +171,7 @@ export default function PriceRangeFilter({
           </div>
           <span className="text-ui-fg-muted">-</span>
           <div className="flex-1">
-            <label className="sr-only">Pret maxim</label>
+            <label className="sr-only">Preț maxim</label>
             <div className="relative">
               <input
                 type="number"

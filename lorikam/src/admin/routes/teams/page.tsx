@@ -14,9 +14,9 @@ import {
   Textarea,
 } from "@medusajs/ui"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { sdk } from "../../lib/sdk"
-import { Buildings, Plus } from "@medusajs/icons"
+import { Buildings, Plus, ArrowUpTray, XMark } from "@medusajs/icons"
 
 type Team = {
   id: string
@@ -34,6 +34,162 @@ type Team = {
 type TeamsResponse = {
   teams: Team[]
   count: number
+}
+
+type ImageUploadProps = {
+  label: string
+  value: string
+  onChange: (url: string) => void
+  previewSize?: "small" | "large"
+}
+
+const ImageUpload = ({ label, value, onChange, previewSize = "small" }: ImageUploadProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const uploadFile = async (file: File) => {
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Tip de fisier invalid. Sunt acceptate doar imagini (JPEG, PNG, GIF, WebP, SVG)")
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Fisierul este prea mare. Dimensiunea maxima este 5MB")
+      return
+    }
+
+    setIsUploading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append("files", file)
+
+      const response = await fetch("/admin/teams/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || "Upload failed")
+      }
+
+      const data = await response.json()
+      onChange(data.file.url)
+      toast.success("Imaginea a fost incarcata!")
+    } catch (error) {
+      toast.error("Eroare la incarcare: " + (error as Error).message)
+    } finally {
+      setIsUploading(false)
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      await uploadFile(file)
+    }
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      await uploadFile(file)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleRemove = () => {
+    onChange("")
+  }
+
+  const sizeClass = previewSize === "large" ? "w-full h-40" : "w-24 h-24"
+
+  return (
+    <div>
+      <Label className="font-medium">{label}</Label>
+      <div className="mt-2">
+        {value ? (
+          <div className={`relative ${previewSize === "large" ? "inline-block w-full" : "inline-block"}`}>
+            <img
+              src={value}
+              alt="Preview"
+              className={`${sizeClass} object-cover rounded-lg border border-ui-border-base bg-ui-bg-subtle`}
+            />
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="absolute -top-2 -right-2 w-6 h-6 bg-ui-tag-red-bg text-ui-tag-red-text border border-ui-tag-red-border rounded-full flex items-center justify-center shadow-sm hover:opacity-80 transition-opacity"
+            >
+              <XMark className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            disabled={isUploading}
+            className={`${sizeClass} border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+              isDragging
+                ? "border-ui-fg-interactive bg-ui-bg-interactive scale-[1.02]"
+                : "border-ui-border-base hover:border-ui-border-strong hover:bg-ui-bg-subtle"
+            }`}
+          >
+            {isUploading ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-5 h-5 border-2 border-ui-fg-muted border-t-transparent rounded-full animate-spin" />
+                <Text size="xsmall" className="text-ui-fg-muted">
+                  Se incarca...
+                </Text>
+              </div>
+            ) : (
+              <>
+                <ArrowUpTray className={`text-ui-fg-muted mb-1 ${previewSize === "large" ? "w-8 h-8" : "w-5 h-5"}`} />
+                <Text size="xsmall" className="text-ui-fg-muted text-center px-2">
+                  {previewSize === "large" ? "Trage sau click pentru a incarca" : "Incarca"}
+                </Text>
+                {previewSize === "large" && (
+                  <Text size="xsmall" className="text-ui-fg-disabled mt-1">
+                    PNG, JPG, GIF pana la 5MB
+                  </Text>
+                )}
+              </>
+            )}
+          </button>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      </div>
+    </div>
+  )
 }
 
 const TeamsPage = () => {
@@ -339,30 +495,12 @@ const TeamsPage = () => {
               />
             </div>
 
-            <div>
-              <Label htmlFor="team-logo" className="font-medium">
-                Logo URL
-              </Label>
-              <Input
-                id="team-logo"
-                value={logo}
-                onChange={(e) => setLogo(e.target.value)}
-                placeholder="https://example.com/logo.png"
-                className="mt-2"
-              />
-              {logo && (
-                <div className="mt-2">
-                  <img
-                    src={logo}
-                    alt="Preview"
-                    className="w-16 h-16 object-contain rounded border"
-                    onError={(e) => {
-                      ;(e.target as HTMLImageElement).style.display = "none"
-                    }}
-                  />
-                </div>
-              )}
-            </div>
+            <ImageUpload
+              label="Logo"
+              value={logo}
+              onChange={setLogo}
+              previewSize="small"
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -417,18 +555,12 @@ const TeamsPage = () => {
               />
             </div>
 
-            <div>
-              <Label htmlFor="team-banner" className="font-medium">
-                Banner URL
-              </Label>
-              <Input
-                id="team-banner"
-                value={bannerImage}
-                onChange={(e) => setBannerImage(e.target.value)}
-                placeholder="https://example.com/banner.jpg"
-                className="mt-2"
-              />
-            </div>
+            <ImageUpload
+              label="Banner"
+              value={bannerImage}
+              onChange={setBannerImage}
+              previewSize="large"
+            />
 
             <div className="flex items-center justify-between">
               <div>

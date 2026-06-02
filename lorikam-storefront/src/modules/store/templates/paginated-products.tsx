@@ -60,7 +60,7 @@ export default async function PaginatedProducts({
   if (products.length === 0) {
     return (
       <p className="text-ui-fg-subtle">
-        Nu exista produse in aceasta categorie momentan.
+        Nu există produse în această categorie momentan.
       </p>
     )
   }

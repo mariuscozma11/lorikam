@@ -32,7 +32,7 @@ export default function TeamFilter({
   }
 
   return (
-    <FilterSection title="Echipa">
+    <FilterSection title="Echipă">
       <div className="space-y-2">
         {teams.map((team) => {
           const isSelected = selectedTeams.includes(team.handle)

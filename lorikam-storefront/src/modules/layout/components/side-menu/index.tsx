@@ -54,7 +54,7 @@ const SideMenu = ({ teams = [] }: SideMenuProps) => {
                     data-testid="close-menu-button"
                     onClick={close}
                     className="flex items-center justify-center w-10 h-10 -mr-2 rounded-md hover:bg-ui-bg-subtle transition-colors"
-                    aria-label="Inchide meniul"
+                    aria-label="Închide meniul"
                   >
                     <XMark className="w-5 h-5" />
                   </button>
@@ -69,7 +69,7 @@ const SideMenu = ({ teams = [] }: SideMenuProps) => {
                       className="flex items-center h-12 px-5 text-base hover:bg-ui-bg-subtle transition-colors"
                       onClick={close}
                     >
-                      Acasa
+                      Acasă
                     </LocalizedClientLink>
 
                     {/* Lorikam Shop */}
@@ -151,7 +151,7 @@ const SideMenu = ({ teams = [] }: SideMenuProps) => {
                       className="flex items-center h-12 px-5 text-base hover:bg-ui-bg-subtle transition-colors"
                       onClick={close}
                     >
-                      Cos
+                      Coș
                     </LocalizedClientLink>
                   </nav>
                 </div>

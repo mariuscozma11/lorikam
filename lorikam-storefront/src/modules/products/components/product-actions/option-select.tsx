@@ -234,7 +234,7 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
                   disabled={disabled || isUnavailable}
                   data-testid="option-button"
                   title={isUnavailable ? `${v} - indisponibil` : v}
-                  aria-label={isUnavailable ? `${v} indisponibil` : `Selecteaza ${v}`}
+                  aria-label={isUnavailable ? `${v} indisponibil` : `Selectează ${v}`}
                 >
                   <ColorSwatch hexCodes={hexCodes} size="w-full h-full" />
                   {isUnavailable && <UnavailableOverlay />}

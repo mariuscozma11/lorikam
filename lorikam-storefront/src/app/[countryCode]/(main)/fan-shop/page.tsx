@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import { Suspense } from "react"
+import Image from "next/image"
 
 import { getTeams } from "@lib/data/teams"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -23,15 +24,30 @@ export default async function FanShopPage(props: Params) {
   const teams = await getTeams()
 
   return (
-    <div className="content-container py-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl-semi">Fan Shop</h1>
-        <p className="text-ui-fg-subtle mt-2">
-          Echipamentele oficiale ale echipelor partenere. Alege echipa ta favorita!
-        </p>
+    <div>
+      {/* Banner */}
+      <div className="relative w-full aspect-[1600/731] overflow-hidden">
+        <Image
+          src="/fan-shop.jpeg"
+          alt="Fan Shop"
+          fill
+          priority
+          quality={90}
+          sizes="100vw"
+          className="object-contain"
+        />
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+          <h1 className="text-white text-3xl small:text-5xl font-semibold">
+            Fan Shop
+          </h1>
+          <p className="text-white/90 mt-3 max-w-2xl text-base small:text-lg">
+            Echipamentele oficiale ale echipelor partenere. Alege echipa ta favorită!
+          </p>
+        </div>
       </div>
 
+      <div className="content-container py-6">
       {/* Teams Grid */}
       {teams.length > 0 && (
         <div className="mb-12">
@@ -107,6 +123,7 @@ export default async function FanShopPage(props: Params) {
         <Suspense fallback={<SkeletonProductGrid />}>
           <AllFanShopProducts countryCode={params.countryCode} />
         </Suspense>
+      </div>
       </div>
     </div>
   )

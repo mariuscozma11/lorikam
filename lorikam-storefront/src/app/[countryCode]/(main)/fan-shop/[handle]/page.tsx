@@ -20,13 +20,14 @@ export async function generateMetadata(props: Params): Promise<Metadata> {
 
   if (!team) {
     return {
-      title: "Echipa nu a fost gasita",
+      title: "Echipa nu a fost găsită",
     }
   }
 
   return {
     title: `${team.name} - Fan Shop`,
-    description: team.description || `Echipamentele oficiale ${team.name}.`,
+    description:
+      team.description || `Echipamentele oficiale ${team.name}.`,
   }
 }
 
@@ -50,14 +51,15 @@ export default async function TeamPage(props: Params) {
     <div>
       {/* Team Header Banner */}
       <div
-        className="relative overflow-hidden"
-        style={{
-          background: team.banner_image
-            ? `url(${team.banner_image}) center/cover`
-            : team.primary_color || "#1f2937",
-          minHeight: "200px",
-        }}
+        className="relative w-full aspect-[1600/731] overflow-hidden"
+        style={{ backgroundColor: team.primary_color || "#1f2937" }}
       >
+        {team.banner_image && (
+          <div
+            className="absolute inset-0 bg-center bg-no-repeat bg-contain"
+            style={{ backgroundImage: `url(${team.banner_image})` }}
+          />
+        )}
         <div
           className="absolute inset-0"
           style={{
@@ -66,7 +68,7 @@ export default async function TeamPage(props: Params) {
               : "transparent",
           }}
         />
-        <div className="relative content-container py-12">
+        <div className="absolute inset-0 content-container flex flex-col justify-center py-8">
           <LocalizedClientLink
             href="/fan-shop"
             className="text-sm mb-4 inline-block hover:underline"

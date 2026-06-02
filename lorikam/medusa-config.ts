@@ -2,6 +2,19 @@ import { loadEnv, defineConfig } from "@medusajs/framework/utils";
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd());
 
+const isProduction = process.env.NODE_ENV === "production";
+
+if (isProduction) {
+  const required = ["JWT_SECRET", "COOKIE_SECRET", "DATABASE_URL", "STORE_CORS", "ADMIN_CORS", "AUTH_CORS"];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length) {
+    throw new Error(`Missing required env vars in production: ${missing.join(", ")}`);
+  }
+  if (process.env.JWT_SECRET === "supersecret" || process.env.COOKIE_SECRET === "supersecret") {
+    throw new Error("JWT_SECRET and COOKIE_SECRET must not use the insecure default in production");
+  }
+}
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
@@ -26,6 +39,9 @@ module.exports = defineConfig({
     },
     {
       resolve: "./src/modules/team",
+    },
+    {
+      resolve: "./src/modules/variant-preset",
     },
     {
       resolve: "@medusajs/medusa/payment",

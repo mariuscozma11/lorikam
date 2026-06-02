@@ -220,6 +220,7 @@ function matchesCategoryFilter(
 
 /**
  * Check if product matches dynamic option filters
+ * Now handles title-based option keys that may map to multiple option IDs
  */
 function matchesOptionFilters(
   product: HttpTypes.StoreProduct,
@@ -228,13 +229,24 @@ function matchesOptionFilters(
   if (Object.keys(optionFilters).length === 0) return true
 
   // For each option filter, at least one variant must match
-  for (const [optionId, values] of Object.entries(optionFilters)) {
+  for (const [filterKey, values] of Object.entries(optionFilters)) {
     let hasMatch = false
 
-    if (product.variants) {
+    // Find all option IDs in this product that match the filter key (by title)
+    const matchingOptionIds: string[] = []
+    if (product.options) {
+      for (const option of product.options) {
+        const normalizedTitle = (option.title || option.id).toLowerCase().trim()
+        if (normalizedTitle === filterKey || option.id === filterKey) {
+          matchingOptionIds.push(option.id)
+        }
+      }
+    }
+
+    if (product.variants && matchingOptionIds.length > 0) {
       for (const variant of product.variants) {
         const variantOption = variant.options?.find(
-          (opt) => opt.option_id === optionId
+          (opt) => matchingOptionIds.includes(opt.option_id)
         )
         if (variantOption && values.includes(variantOption.value)) {
           hasMatch = true
@@ -371,13 +383,22 @@ export function getPriceRange(products: HttpTypes.StoreProduct[]): {
 /**
  * Extract unique option values from products
  * Excludes "Culoare" option which has dedicated filter
+ * Groups options by title (not by id) to consolidate same-named options across products
  */
+// Medusa auto-creates a "Default option" / "Default option value" for products
+// that have no real variant options. These should never appear as filters.
+function isDefaultOptionValue(value?: string): boolean {
+  const v = value?.toLowerCase().trim()
+  return v === "default option value" || v === "default"
+}
+
 export function extractProductOptions(
   products: HttpTypes.StoreProduct[]
-): Record<string, { id: string; title: string; values: string[] }> {
+): Record<string, { id: string; title: string; values: string[]; optionIds: string[] }> {
+  // Group by normalized title to consolidate options with the same name
   const optionsMap: Record<
     string,
-    { id: string; title: string; values: Set<string> }
+    { title: string; values: Set<string>; optionIds: Set<string> }
   > = {}
 
   for (const product of products) {
@@ -387,18 +408,35 @@ export function extractProductOptions(
       // Skip color option
       if (option.title?.toLowerCase() === "culoare") continue
 
-      if (!optionsMap[option.id]) {
-        optionsMap[option.id] = {
-          id: option.id,
-          title: option.title || option.id,
+      // Skip Medusa's auto-generated default option (products without real variants)
+      const lowerOptionTitle = option.title?.toLowerCase().trim()
+      if (
+        lowerOptionTitle === "default option" ||
+        lowerOptionTitle === "default"
+      ) {
+        continue
+      }
+
+      const title = option.title || option.id
+      const normalizedTitle = title.toLowerCase().trim()
+
+      if (!optionsMap[normalizedTitle]) {
+        optionsMap[normalizedTitle] = {
+          title: title,
           values: new Set(),
+          optionIds: new Set(),
         }
       }
+
+      // Track all option IDs that share this title
+      optionsMap[normalizedTitle].optionIds.add(option.id)
 
       // Get values from option.values if available
       if (option.values) {
         for (const val of option.values) {
-          optionsMap[option.id].values.add(val.value)
+          if (!isDefaultOptionValue(val.value)) {
+            optionsMap[normalizedTitle].values.add(val.value)
+          }
         }
       }
 
@@ -408,23 +446,24 @@ export function extractProductOptions(
           const variantOption = variant.options?.find(
             (opt) => opt.option_id === option.id
           )
-          if (variantOption?.value) {
-            optionsMap[option.id].values.add(variantOption.value)
+          if (variantOption?.value && !isDefaultOptionValue(variantOption.value)) {
+            optionsMap[normalizedTitle].values.add(variantOption.value)
           }
         }
       }
     }
   }
 
-  // Convert Sets to arrays
-  const result: Record<string, { id: string; title: string; values: string[] }> =
+  // Convert Sets to arrays, using normalized title as key
+  const result: Record<string, { id: string; title: string; values: string[]; optionIds: string[] }> =
     {}
-  for (const [id, data] of Object.entries(optionsMap)) {
+  for (const [normalizedTitle, data] of Object.entries(optionsMap)) {
     if (data.values.size > 0) {
-      result[id] = {
-        id: data.id,
+      result[normalizedTitle] = {
+        id: normalizedTitle, // Use normalized title as the filter key
         title: data.title,
         values: Array.from(data.values).sort(),
+        optionIds: Array.from(data.optionIds), // Keep track of actual option IDs for filtering
       }
     }
   }

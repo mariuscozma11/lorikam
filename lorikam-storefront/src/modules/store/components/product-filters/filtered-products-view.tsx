@@ -120,11 +120,11 @@ export default function FilteredProductsView({
         {/* Results count */}
         <div className="mb-4 text-sm text-ui-fg-subtle">
           {filteredAndSortedProducts.length === 0 ? (
-            "Nu s-au gasit produse"
+            "Nu s-au găsit produse"
           ) : filteredAndSortedProducts.length === 1 ? (
-            "1 produs gasit"
+            "1 produs găsit"
           ) : (
-            `${filteredAndSortedProducts.length} produse gasite`
+            `${filteredAndSortedProducts.length} produse găsite`
           )}
         </div>
 
@@ -153,13 +153,13 @@ export default function FilteredProductsView({
           </>
         ) : (
           <div className="py-12 text-center text-ui-fg-subtle">
-            <p>Nu s-au gasit produse care sa corespunda filtrelor selectate.</p>
+            <p>Nu s-au găsit produse care să corespundă filtrelor selectate.</p>
             <button
               type="button"
               onClick={() => router.push(pathname)}
               className="mt-4 text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
             >
-              Sterge toate filtrele
+              Șterge toate filtrele
             </button>
           </div>
         )}

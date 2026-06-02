@@ -16,6 +16,16 @@ import {
 } from "./admin/colors/validators"
 import { UpdateProductInventorySchema } from "./admin/products/[id]/inventory/validators"
 import { teamMiddlewares } from "./admin/teams/middlewares"
+import {
+  CreateSizePresetSchema,
+  UpdateSizePresetSchema,
+} from "./admin/size-presets/validators"
+import {
+  CreateCroiSchema,
+  UpdateCroiSchema,
+} from "./admin/crois/validators"
+import { BuildVariantsSchema } from "./admin/products/[id]/build-variants/validators"
+import { FullCreateProductSchema } from "./admin/products/full-create/validators"
 
 export const GetColorsSchema = createFindParams()
 
@@ -66,6 +76,36 @@ export default defineMiddlewares({
       matcher: "/admin/products/:id/inventory",
       method: "POST",
       middlewares: [validateAndTransformBody(UpdateProductInventorySchema)],
+    },
+    {
+      matcher: "/admin/size-presets",
+      method: "POST",
+      middlewares: [validateAndTransformBody(CreateSizePresetSchema)],
+    },
+    {
+      matcher: "/admin/size-presets/:id",
+      method: "POST",
+      middlewares: [validateAndTransformBody(UpdateSizePresetSchema)],
+    },
+    {
+      matcher: "/admin/crois",
+      method: "POST",
+      middlewares: [validateAndTransformBody(CreateCroiSchema)],
+    },
+    {
+      matcher: "/admin/crois/:id",
+      method: "POST",
+      middlewares: [validateAndTransformBody(UpdateCroiSchema)],
+    },
+    {
+      matcher: "/admin/products/:id/build-variants",
+      method: "POST",
+      middlewares: [validateAndTransformBody(BuildVariantsSchema)],
+    },
+    {
+      matcher: "/admin/products/full-create",
+      method: "POST",
+      middlewares: [validateAndTransformBody(FullCreateProductSchema)],
     },
   ],
 })

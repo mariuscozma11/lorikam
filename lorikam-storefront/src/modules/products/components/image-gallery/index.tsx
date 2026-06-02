@@ -29,7 +29,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
     return (
       <Container className="relative aspect-square w-full overflow-hidden bg-ui-bg-subtle">
         <div className="flex items-center justify-center h-full text-ui-fg-muted">
-          No images available
+          Nicio imagine disponibilă
         </div>
       </Container>
     )
@@ -52,7 +52,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
                   src={image.url}
                   priority={index === 0}
                   className="rounded-rounded object-cover"
-                  alt={`Product image ${index + 1}`}
+                  alt={`Imaginea produsului ${index + 1}`}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
@@ -67,14 +67,14 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
             <button
               onClick={goToPrevious}
               className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg grid place-items-center transition-all duration-200 hover:scale-110"
-              aria-label="Previous image"
+              aria-label="Imaginea anterioară"
             >
               <ChevronLeft className="!w-5 !h-5 text-ui-fg-base" />
             </button>
             <button
               onClick={goToNext}
               className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg grid place-items-center transition-all duration-200 hover:scale-110"
-              aria-label="Next image"
+              aria-label="Imaginea următoare"
             >
               <ChevronRight className="!w-5 !h-5 text-ui-fg-base" />
             </button>
@@ -93,7 +93,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
                     ? "bg-ui-fg-base w-6"
                     : "bg-ui-fg-muted/50 hover:bg-ui-fg-muted"
                 }`}
-                aria-label={`Go to image ${index + 1}`}
+                aria-label={`Mergi la imaginea ${index + 1}`}
               />
             ))}
           </div>
@@ -112,13 +112,13 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
                   ? "ring-2 ring-ui-fg-base ring-offset-2"
                   : "opacity-60 hover:opacity-100"
               }`}
-              aria-label={`View image ${index + 1}`}
+              aria-label={`Vezi imaginea ${index + 1}`}
             >
               {!!image.url && (
                 <Image
                   src={image.url}
                   className="object-cover"
-                  alt={`Product thumbnail ${index + 1}`}
+                  alt={`Miniatura produsului ${index + 1}`}
                   fill
                   sizes="80px"
                 />

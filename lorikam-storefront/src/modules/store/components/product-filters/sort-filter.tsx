@@ -11,8 +11,8 @@ type SortFilterProps = {
 
 const sortOptions: { value: SortOption; label: string }[] = [
   { value: "created_at", label: "Cele mai noi" },
-  { value: "price_asc", label: "Pret: Mic → Mare" },
-  { value: "price_desc", label: "Pret: Mare → Mic" },
+  { value: "price_asc", label: "Preț: Mic → Mare" },
+  { value: "price_desc", label: "Preț: Mare → Mic" },
   { value: "title_asc", label: "Nume: A → Z" },
   { value: "title_desc", label: "Nume: Z → A" },
 ]
@@ -21,7 +21,7 @@ export default function SortFilter({ sortBy, onChange }: SortFilterProps) {
   const currentSort = sortBy || "created_at"
 
   return (
-    <FilterSection title="Sorteaza dupa" defaultOpen={true}>
+    <FilterSection title="Sortează după" defaultOpen={true}>
       <div className="space-y-2">
         {sortOptions.map((option) => {
           const isSelected = currentSort === option.value

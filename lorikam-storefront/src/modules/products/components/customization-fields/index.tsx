@@ -131,7 +131,7 @@ export const validateCustomizationFields = (
     if (field.type === "number") {
       const num = parseInt(value, 10)
       if (isNaN(num)) {
-        errors[field.key] = "Introdu un numar valid"
+        errors[field.key] = "Introdu un număr valid"
       } else {
         if (field.min !== undefined && num < field.min) {
           errors[field.key] = `Minim ${field.min}`

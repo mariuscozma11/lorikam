@@ -47,6 +47,7 @@ const ProductInventoryWidget = ({
   const [selectedLocationId, setSelectedLocationId] = useState<string>("")
   const [changes, setChanges] = useState<Record<string, VariantChange>>({})
   const [hasChanges, setHasChanges] = useState(false)
+  const [customQuantity, setCustomQuantity] = useState<string>("0")
 
   // Fetch inventory data
   const {
@@ -291,7 +292,7 @@ const ProductInventoryWidget = ({
             </Select>
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
             <Button
               variant="secondary"
               size="small"
@@ -299,27 +300,26 @@ const ProductInventoryWidget = ({
             >
               Activeaza toate
             </Button>
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => handleSetAllQuantity(10)}
-            >
-              Seteaza toate = 10
-            </Button>
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => handleSetAllQuantity(50)}
-            >
-              = 50
-            </Button>
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => handleSetAllQuantity(100)}
-            >
-              = 100
-            </Button>
+            <div className="flex items-center gap-1">
+              <Text size="small" className="text-ui-fg-muted whitespace-nowrap">
+                Seteaza toate =
+              </Text>
+              <Input
+                type="number"
+                min={0}
+                value={customQuantity}
+                onChange={(e) => setCustomQuantity(e.target.value)}
+                className="w-16 text-center"
+                size="small"
+              />
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => handleSetAllQuantity(parseInt(customQuantity) || 0)}
+              >
+                Aplica
+              </Button>
+            </div>
           </div>
         </div>
 

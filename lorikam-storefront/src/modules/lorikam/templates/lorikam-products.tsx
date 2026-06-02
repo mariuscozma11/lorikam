@@ -37,7 +37,7 @@ export default async function LorikamProducts({
   if (lorikamProducts.length === 0) {
     return (
       <p className="text-ui-fg-subtle">
-        Nu exista produse in Lorikam Shop momentan.
+        Nu există produse în Lorikam Shop momentan.
       </p>
     )
   }

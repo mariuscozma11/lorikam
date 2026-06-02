@@ -25,7 +25,7 @@ export default async function TeamProducts({
   if (teamProductIds.length === 0) {
     return (
       <p className="text-ui-fg-subtle">
-        Nu exista produse pentru aceasta echipa momentan.
+        Nu există produse pentru această echipă momentan.
       </p>
     )
   }
@@ -48,7 +48,7 @@ export default async function TeamProducts({
   if (allProducts.length === 0) {
     return (
       <p className="text-ui-fg-subtle">
-        Nu exista produse pentru aceasta echipa momentan.
+        Nu există produse pentru această echipă momentan.
       </p>
     )
   }

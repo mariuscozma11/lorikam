@@ -1,8 +1,11 @@
 import { Suspense } from "react"
+import Image from "next/image"
 
 import { getCustomerDiscount } from "@lib/data/customer"
 import { getTeams } from "@lib/data/teams"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import User from "@modules/common/icons/user"
+import ShoppingBag from "@modules/common/icons/shopping-bag"
 import CartButton from "@modules/layout/components/cart-button"
 import SideMenu from "@modules/layout/components/side-menu"
 import ShopMenu from "@modules/layout/components/shop-menu"
@@ -30,10 +33,17 @@ export default async function Nav() {
           <div className="flex items-center h-full">
             <LocalizedClientLink
               href="/"
-              className="txt-compact-xlarge-plus hover:text-ui-fg-base uppercase"
+              className="flex items-center hover:opacity-80"
               data-testid="nav-store-link"
             >
-              Lorikam
+              <Image
+                src="/logo-retina.png"
+                alt="Lorikam"
+                width={446}
+                height={104}
+                priority
+                className="h-9 w-auto"
+              />
             </LocalizedClientLink>
           </div>
 
@@ -42,20 +52,22 @@ export default async function Nav() {
             {/* Desktop: Account and Cart */}
             <div className="hidden small:flex items-center gap-x-6 h-full">
               <LocalizedClientLink
-                className="hover:text-ui-fg-base"
+                className="hover:text-ui-fg-base flex items-center"
                 href="/account"
                 data-testid="nav-account-link"
+                aria-label="Cont"
               >
-                Cont
+                <User size="22" />
               </LocalizedClientLink>
               <Suspense
                 fallback={
                   <LocalizedClientLink
-                    className="hover:text-ui-fg-base flex gap-2"
+                    className="hover:text-ui-fg-base flex items-center"
                     href="/cart"
                     data-testid="nav-cart-link"
+                    aria-label="Coș (0)"
                   >
-                    Cos (0)
+                    <ShoppingBag size="22" />
                   </LocalizedClientLink>
                 }
               >

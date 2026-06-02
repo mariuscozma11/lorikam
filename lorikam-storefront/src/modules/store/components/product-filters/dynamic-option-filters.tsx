@@ -8,6 +8,7 @@ type ProductOption = {
   id: string
   title: string
   values: string[]
+  optionIds?: string[] // All actual option IDs that share this title
 }
 
 type DynamicOptionFiltersProps = {

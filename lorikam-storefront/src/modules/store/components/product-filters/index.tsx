@@ -231,7 +231,7 @@ export default function ProductFilters({
                 className="flex items-center gap-1 text-sm text-ui-fg-subtle hover:text-ui-fg-base transition-colors"
               >
                 <XMark className="w-4 h-4" />
-                Sterge filtrele
+                Șterge filtrele
               </button>
             </div>
           )}
@@ -251,7 +251,7 @@ export default function ProductFilters({
               className="flex items-center gap-1 text-sm text-ui-fg-subtle hover:text-ui-fg-base transition-colors"
             >
               <XMark className="w-4 h-4" />
-              Sterge ({activeFilterCount})
+              Șterge ({activeFilterCount})
             </button>
           )}
         </div>

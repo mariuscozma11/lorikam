@@ -5,6 +5,10 @@
 /node_modules
 yarn-error.log
 
+# Uploaded files (local file provider) — not source
+/static/*
+!/static/.gitkeep
+
 .idea
 
 coverage

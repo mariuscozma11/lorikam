@@ -1,6 +1,12 @@
 import { MiddlewareRoute, validateAndTransformBody, validateAndTransformQuery } from "@medusajs/framework/http"
 import { createFindParams } from "@medusajs/medusa/api/utils/validators"
 import { z } from "zod"
+import multer from "multer"
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 5 },
+})
 
 export const CreateTeamSchema = z.object({
   name: z.string().min(1),
@@ -72,5 +78,13 @@ export const teamMiddlewares: MiddlewareRoute[] = [
     matcher: "/admin/teams/:id/products",
     method: "POST",
     middlewares: [validateAndTransformBody(LinkProductSchema)],
+  },
+  {
+    matcher: "/admin/teams/upload",
+    method: "POST",
+    middlewares: [
+      // @ts-ignore - multer middleware
+      upload.array("files"),
+    ],
   },
 ]

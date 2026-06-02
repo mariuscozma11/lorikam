@@ -65,9 +65,12 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       locations: locations || [],
     })
   } catch (error) {
+    console.error("Inventory fetch error:", error)
     res.status(500).json({
       message: "Error fetching inventory data",
-      error: (error as Error).message,
+      ...(process.env.NODE_ENV !== "production" && {
+        error: (error as Error).message,
+      }),
     })
   }
 }
@@ -90,9 +93,12 @@ export const POST = async (
 
     res.json(result)
   } catch (error) {
+    console.error("Inventory update error:", error)
     res.status(500).json({
       message: "Error updating inventory",
-      error: (error as Error).message,
+      ...(process.env.NODE_ENV !== "production" && {
+        error: (error as Error).message,
+      }),
     })
   }
 }

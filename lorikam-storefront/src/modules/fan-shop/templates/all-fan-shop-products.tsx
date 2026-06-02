@@ -23,7 +23,7 @@ export default async function AllFanShopProducts({
   if (linkedProductIds.length === 0) {
     return (
       <p className="text-ui-fg-subtle">
-        Nu exista produse Fan Shop momentan.
+        Nu există produse Fan Shop momentan.
       </p>
     )
   }
@@ -47,7 +47,7 @@ export default async function AllFanShopProducts({
   if (allProducts.length === 0) {
     return (
       <p className="text-ui-fg-subtle">
-        Nu exista produse Fan Shop momentan.
+        Nu există produse Fan Shop momentan.
       </p>
     )
   }
