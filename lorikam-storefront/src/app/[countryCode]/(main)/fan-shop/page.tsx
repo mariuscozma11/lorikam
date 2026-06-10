@@ -4,6 +4,7 @@ import Image from "next/image"
 
 import { getTeams } from "@lib/data/teams"
 import Breadcrumbs from "@modules/common/components/breadcrumbs"
+import { getSiteImage } from "@lib/data/site-settings"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
 import AllFanShopProducts from "@modules/fan-shop/templates/all-fan-shop-products"
@@ -23,13 +24,14 @@ export default async function FanShopPage(props: Params) {
   const params = await props.params
 
   const teams = await getTeams()
+  const banner = await getSiteImage("fan_shop_banner", "/fan-shop.jpeg")
 
   return (
     <div>
       {/* Banner */}
       <div className="relative w-full aspect-[1600/731] overflow-hidden">
         <Image
-          src="/fan-shop.jpeg"
+          src={banner}
           alt="Fan Shop"
           fill
           priority

@@ -1,23 +1,24 @@
 import Image from "next/image"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { getSiteSettings } from "@lib/data/site-settings"
 
-const CARDS = [
-  {
-    href: "/lorikam",
-    image: "/lorikam-shop.jpeg",
-    title: "Lorikam Shop",
-    desc: "Colecția proprie de articole sportive.",
-  },
-  {
-    href: "/fan-shop",
-    image: "/fan-shop.jpeg",
-    title: "Fan Shop",
-    desc: "Echipamente oficiale ale echipelor partenere.",
-  },
-]
-
-export default function PromoCards() {
+export default async function PromoCards() {
+  const settings = await getSiteSettings()
+  const CARDS = [
+    {
+      href: "/lorikam",
+      image: settings.lorikam_banner || "/lorikam-shop.jpeg",
+      title: "Lorikam Shop",
+      desc: "Colecția proprie de articole sportive.",
+    },
+    {
+      href: "/fan-shop",
+      image: settings.fan_shop_banner || "/fan-shop.jpeg",
+      title: "Fan Shop",
+      desc: "Echipamente oficiale ale echipelor partenere.",
+    },
+  ]
   return (
     <section className="content-container py-12">
       <div className="grid grid-cols-1 small:grid-cols-2 gap-6">

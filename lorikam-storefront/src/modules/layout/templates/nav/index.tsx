@@ -9,11 +9,13 @@ import ShoppingBag from "@modules/common/icons/shopping-bag"
 import CartButton from "@modules/layout/components/cart-button"
 import SideMenu from "@modules/layout/components/side-menu"
 import ShopMenu from "@modules/layout/components/shop-menu"
+import { getSiteImage } from "@lib/data/site-settings"
 
 export default async function Nav() {
-  const [customerDiscount, teams] = await Promise.all([
+  const [customerDiscount, teams, logo] = await Promise.all([
     getCustomerDiscount(),
     getTeams(),
+    getSiteImage("logo", "/logo-retina.png"),
   ])
 
   const isCollaborator = customerDiscount?.is_collaborator ?? false
@@ -37,7 +39,7 @@ export default async function Nav() {
               data-testid="nav-store-link"
             >
               <Image
-                src="/logo-retina.png"
+                src={logo}
                 alt="Lorikam"
                 width={446}
                 height={104}

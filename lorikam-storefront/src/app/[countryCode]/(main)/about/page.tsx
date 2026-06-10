@@ -4,6 +4,7 @@ import Image from "next/image"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CountUp from "@modules/content/components/count-up"
 import Breadcrumbs from "@modules/common/components/breadcrumbs"
+import { getSiteSettings } from "@lib/data/site-settings"
 
 export const metadata: Metadata = {
   title: "Despre noi",
@@ -41,13 +42,16 @@ const STATS = [
   { to: 100, suffix: "%", label: "Calitate garantată" },
 ]
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const settings = await getSiteSettings()
+  const heroImage = settings.about_hero || "/lorikam-shop.jpeg"
+  const storyImage = settings.about_story || "/fan-shop.jpeg"
   return (
     <div>
       {/* Hero */}
       <section className="relative w-full h-[50vh] min-h-[340px] overflow-hidden">
         <Image
-          src="/lorikam-shop.jpeg"
+          src={heroImage}
           alt="Despre Lorikam"
           fill
           priority
@@ -75,7 +79,7 @@ export default function AboutPage() {
       <section className="content-container grid grid-cols-1 medium:grid-cols-2 gap-12 items-center py-16">
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl">
           <Image
-            src="/fan-shop.jpeg"
+            src={storyImage}
             alt="Povestea Lorikam"
             fill
             quality={90}

@@ -30,6 +30,7 @@ import {
   CreateContentPageSchema,
   UpdateContentPageSchema,
 } from "./admin/content-pages/validators"
+import { UpsertSiteSettingSchema } from "./admin/site-settings/validators"
 
 export const GetColorsSchema = createFindParams()
 
@@ -120,6 +121,11 @@ export default defineMiddlewares({
       matcher: "/admin/content-pages/:id",
       method: "POST",
       middlewares: [validateAndTransformBody(UpdateContentPageSchema)],
+    },
+    {
+      matcher: "/admin/site-settings",
+      method: "POST",
+      middlewares: [validateAndTransformBody(UpsertSiteSettingSchema)],
     },
   ],
 })

@@ -1,14 +1,16 @@
 import Image from "next/image"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { getSiteImage } from "@lib/data/site-settings"
 
-export default function AboutTeaser() {
+export default async function AboutTeaser() {
+  const image = await getSiteImage("about_story", "/lorikam-shop.jpeg")
   return (
     <section className="bg-ui-bg-subtle border-y border-ui-border-base">
       <div className="content-container grid grid-cols-1 medium:grid-cols-2 gap-10 items-center py-16">
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg">
           <Image
-            src="/lorikam-shop.jpeg"
+            src={image}
             alt="Despre Lorikam"
             fill
             quality={90}

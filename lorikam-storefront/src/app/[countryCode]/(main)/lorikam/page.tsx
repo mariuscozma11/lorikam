@@ -5,6 +5,7 @@ import Image from "next/image"
 import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
 import LorikamProducts from "@modules/lorikam/templates/lorikam-products"
 import Breadcrumbs from "@modules/common/components/breadcrumbs"
+import { getSiteImage } from "@lib/data/site-settings"
 
 export const metadata: Metadata = {
   title: "Lorikam Shop",
@@ -19,13 +20,14 @@ type Params = {
 
 export default async function LorikamPage(props: Params) {
   const params = await props.params
+  const banner = await getSiteImage("lorikam_banner", "/lorikam-shop.jpeg")
 
   return (
     <div data-testid="lorikam-container">
       {/* Banner */}
       <div className="relative w-full aspect-[1600/731] overflow-hidden">
         <Image
-          src="/lorikam-shop.jpeg"
+          src={banner}
           alt="Lorikam Shop"
           fill
           priority

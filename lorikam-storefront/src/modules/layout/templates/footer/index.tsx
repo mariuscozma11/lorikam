@@ -2,6 +2,7 @@ import Image from "next/image"
 import { Text } from "@medusajs/ui"
 
 import { getTeams } from "@lib/data/teams"
+import { getSiteImage } from "@lib/data/site-settings"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
 // Replace "#" with the client's real social URLs when available.
@@ -25,7 +26,10 @@ const SOCIAL_LINKS = [
 ]
 
 export default async function Footer() {
-  const teams = await getTeams()
+  const [teams, logo] = await Promise.all([
+    getTeams(),
+    getSiteImage("logo", "/logo-retina.png"),
+  ])
 
   return (
     <footer className="border-t border-ui-border-base w-full">
@@ -35,7 +39,7 @@ export default async function Footer() {
           <div className="flex flex-col gap-y-4">
             <LocalizedClientLink href="/" className="inline-flex">
               <Image
-                src="/logo-retina.png"
+                src={logo}
                 alt="Lorikam"
                 width={446}
                 height={104}

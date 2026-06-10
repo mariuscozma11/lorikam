@@ -1,12 +1,14 @@
 import Image from "next/image"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { getSiteImage } from "@lib/data/site-settings"
 
-const Hero = () => {
+const Hero = async () => {
+  const heroImage = await getSiteImage("hero_image", "/hero-placeholder.svg")
   return (
     <div className="relative w-full h-[70vh] min-h-[420px] border-b border-ui-border-base overflow-hidden">
       <Image
-        src="/hero-placeholder.svg"
+        src={heroImage}
         alt="Lorikam"
         fill
         priority
