@@ -388,7 +388,7 @@ const CreateProduct = ({
       if (tagged.length && colorIds.size > 0) {
         const { product: full } = await sdk.admin.product.retrieve(product.id, {
           fields:
-            "id,images.id,images.url,variants.id,variants.options,options.id,options.title",
+            "id,images.id,images.url,variants.id,variants.options.value,variants.options.option_id,options.id,options.title",
         } as any)
         const optTitle: Record<string, string> = {}
         for (const o of (full as any).options || []) optTitle[o.id] = o.title
