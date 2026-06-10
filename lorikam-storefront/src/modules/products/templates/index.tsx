@@ -7,6 +7,7 @@ import ProductInfo from "@modules/products/templates/product-info"
 import ProductDisplay from "@modules/products/components/product-display"
 import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
 import MarkdownContent from "@modules/common/components/markdown-content"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 import { notFound } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
 
@@ -34,6 +35,13 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
         className="content-container py-6"
         data-testid="product-container"
       >
+        <Breadcrumbs
+          items={[
+            { label: "Toate produsele", href: "/store" },
+            { label: product.title },
+          ]}
+          className="mb-6"
+        />
         <ProductDisplay product={product} region={region}>
           <ProductOnboardingCta />
         </ProductDisplay>

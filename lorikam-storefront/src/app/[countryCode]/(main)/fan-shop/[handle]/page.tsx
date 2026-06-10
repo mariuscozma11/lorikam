@@ -6,6 +6,7 @@ import { getTeamByHandle, getTeams } from "@lib/data/teams"
 import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
 import TeamProducts from "@modules/fan-shop/templates/team-products"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 
 type Params = {
   params: Promise<{
@@ -121,6 +122,13 @@ export default async function TeamPage(props: Params) {
         className="py-6 content-container"
         data-testid="team-products-container"
       >
+        <Breadcrumbs
+          items={[
+            { label: "Fan Shop", href: "/fan-shop" },
+            { label: team.name },
+          ]}
+          className="mb-6"
+        />
         <div className="mb-8">
           <h2 className="text-xl-semi">Produse {team.name}</h2>
         </div>

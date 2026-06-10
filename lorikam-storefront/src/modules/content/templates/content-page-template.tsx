@@ -2,6 +2,7 @@ import { Heading } from "@medusajs/ui"
 
 import { getContentPage } from "@lib/data/content"
 import MarkdownContent from "@modules/content/components/markdown-content"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 
 export default async function ContentPageTemplate({ slug }: { slug: string }) {
   const page = await getContentPage(slug)
@@ -21,6 +22,7 @@ export default async function ContentPageTemplate({ slug }: { slug: string }) {
 
   return (
     <div className="content-container py-12 max-w-3xl">
+      <Breadcrumbs items={[{ label: page.title }]} className="mb-6" />
       <Heading level="h1" className="text-3xl font-semibold mb-6">
         {page.title}
       </Heading>

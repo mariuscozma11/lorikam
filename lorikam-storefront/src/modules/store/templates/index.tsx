@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 
 import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 
 import PaginatedProducts from "./paginated-products"
 
@@ -14,6 +15,7 @@ const StoreTemplate = ({
       className="py-6 content-container"
       data-testid="category-container"
     >
+      <Breadcrumbs items={[{ label: "Toate produsele" }]} className="mb-6" />
       <div className="mb-8 text-2xl-semi">
         <h1 data-testid="store-page-title">Toate produsele</h1>
       </div>

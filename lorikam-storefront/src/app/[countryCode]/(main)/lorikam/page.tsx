@@ -4,6 +4,7 @@ import Image from "next/image"
 
 import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
 import LorikamProducts from "@modules/lorikam/templates/lorikam-products"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 
 export const metadata: Metadata = {
   title: "Lorikam Shop",
@@ -47,6 +48,7 @@ export default async function LorikamPage(props: Params) {
       </div>
 
       <div className="py-6 content-container">
+        <Breadcrumbs items={[{ label: "Lorikam Shop" }]} className="mb-6" />
         <Suspense fallback={<SkeletonProductGrid />}>
           <LorikamProducts countryCode={params.countryCode} />
         </Suspense>

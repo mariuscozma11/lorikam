@@ -3,6 +3,7 @@ import { Suspense } from "react"
 import Image from "next/image"
 
 import { getTeams } from "@lib/data/teams"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
 import AllFanShopProducts from "@modules/fan-shop/templates/all-fan-shop-products"
@@ -48,6 +49,7 @@ export default async function FanShopPage(props: Params) {
       </div>
 
       <div className="content-container py-6">
+      <Breadcrumbs items={[{ label: "Fan Shop" }]} className="mb-6" />
       {/* Teams Grid */}
       {teams.length > 0 && (
         <div className="mb-12">

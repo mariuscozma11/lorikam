@@ -4,7 +4,7 @@ import { Suspense } from "react"
 import InteractiveLink from "@modules/common/components/interactive-link"
 import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
 import PaginatedProducts from "@modules/store/templates/paginated-products"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 import { HttpTypes } from "@medusajs/types"
 
 export default function CategoryTemplate({
@@ -32,20 +32,18 @@ export default function CategoryTemplate({
       className="py-6 content-container"
       data-testid="category-container"
     >
+      <Breadcrumbs
+        items={[
+          { label: "Toate produsele", href: "/store" },
+          ...[...parents].reverse().map((p) => ({
+            label: p.name,
+            href: `/categories/${p.handle}`,
+          })),
+          { label: category.name },
+        ]}
+        className="mb-6"
+      />
       <div className="flex flex-row mb-8 text-2xl-semi gap-4">
-        {parents &&
-          parents.map((parent) => (
-            <span key={parent.id} className="text-ui-fg-subtle">
-              <LocalizedClientLink
-                className="mr-4 hover:text-black"
-                href={`/categories/${parent.handle}`}
-                data-testid="sort-by-link"
-              >
-                {parent.name}
-              </LocalizedClientLink>
-              /
-            </span>
-          ))}
         <h1 data-testid="category-page-title">{category.name}</h1>
       </div>
       {category.description && (

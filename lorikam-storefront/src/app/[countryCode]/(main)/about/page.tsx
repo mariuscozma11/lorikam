@@ -3,6 +3,7 @@ import Image from "next/image"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CountUp from "@modules/content/components/count-up"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 
 export const metadata: Metadata = {
   title: "Despre noi",
@@ -64,6 +65,11 @@ export default function AboutPage() {
           </h1>
         </div>
       </section>
+
+      <Breadcrumbs
+        items={[{ label: "Despre noi" }]}
+        className="content-container pt-6"
+      />
 
       {/* Story */}
       <section className="content-container grid grid-cols-1 medium:grid-cols-2 gap-12 items-center py-16">
