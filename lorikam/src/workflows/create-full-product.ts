@@ -24,6 +24,8 @@ export type CreateFullProductInput = {
   color_ids?: string[]
   manage_inventory?: boolean
   description?: string | null
+  customization_fields?: any[]
+  image_urls?: string[]
 }
 
 const uniq = (arr: string[]) => Array.from(new Set(arr))
@@ -90,6 +92,12 @@ const createFullProductStep = createStep(
     )
     const salesChannelId = channels?.[0]?.id
 
+    const metadata: Record<string, any> = {}
+    if (colorNames.length) metadata.color_map = colorMap
+    if (input.customization_fields?.length) {
+      metadata.customization_fields = input.customization_fields
+    }
+
     const { result } = await createProductsWorkflow(container).run({
       input: {
         products: [
@@ -101,7 +109,10 @@ const createFullProductStep = createStep(
               : {}),
             options,
             variants,
-            ...(colorNames.length ? { metadata: { color_map: colorMap } } : {}),
+            ...(input.image_urls?.length
+              ? { images: input.image_urls.map((url) => ({ url })) }
+              : {}),
+            ...(Object.keys(metadata).length ? { metadata } : {}),
             ...(salesChannelId
               ? { sales_channels: [{ id: salesChannelId }] }
               : {}),

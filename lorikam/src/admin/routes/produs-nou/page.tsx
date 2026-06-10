@@ -10,11 +10,15 @@ import {
   Textarea,
   Checkbox,
   Badge,
+  Table,
+  IconButton,
 } from "@medusajs/ui"
-import { PlusMini } from "@medusajs/icons"
-import { useQuery, useMutation } from "@tanstack/react-query"
+import { TagSolid, Plus, ArrowLeft, Trash, XMark } from "@medusajs/icons"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import MDEditor from "@uiw/react-md-editor"
+import remarkBreaks from "remark-breaks"
 import { sdk } from "../../lib/sdk"
 
 type Team = { id: string; name: string }
@@ -26,10 +30,164 @@ type Croi = {
   display_order: number
 }
 type Color = { id: string; name: string; hex_codes: string[] }
+type CustomField = {
+  key: string
+  label: string
+  type: "text" | "number"
+  required: boolean
+}
+type ProductRow = {
+  id: string
+  title: string
+  status: string
+  thumbnail: string | null
+  variants?: { id: string }[]
+}
 
-const NewProductPage = () => {
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Ciornă",
+  published: "Publicat",
+  proposed: "Propus",
+  rejected: "Respins",
+}
+
+const slugifyKey = (label: string) =>
+  label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "")
+
+const PREDEFINED_FIELDS: { label: string; type: "text" | "number"; required: boolean }[] = [
+  { label: "Nume jucător", type: "text", required: true },
+  { label: "Număr tricou", type: "number", required: true },
+  { label: "Mesaj dedicație", type: "text", required: false },
+]
+
+const ProductHubPage = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [view, setView] = useState<"list" | "create">("list")
 
+  return view === "list" ? (
+    <ProductList onNew={() => setView("create")} navigate={navigate} />
+  ) : (
+    <CreateProduct
+      onBack={() => setView("list")}
+      navigate={navigate}
+      queryClient={queryClient}
+    />
+  )
+}
+
+/* ----------------------------- LIST ----------------------------- */
+const ProductList = ({
+  onNew,
+  navigate,
+}: {
+  onNew: () => void
+  navigate: (to: string) => void
+}) => {
+  const [search, setSearch] = useState("")
+
+  const { data, isLoading } = useQuery<{ products: ProductRow[]; count: number }>(
+    {
+      queryFn: () =>
+        sdk.admin.product.list({
+          q: search || undefined,
+          limit: 50,
+          fields: "id,title,status,thumbnail,variants.id",
+        } as any) as any,
+      queryKey: ["hub-products", search],
+    }
+  )
+  const products = data?.products || []
+
+  return (
+    <Container className="divide-y p-0">
+      <div className="flex items-center justify-between px-6 py-4">
+        <div>
+          <Heading level="h1">Produse</Heading>
+          <Text size="small" className="text-ui-fg-muted mt-1">
+            Gestionează produsele. Click pe un produs pentru editare completă.
+          </Text>
+        </div>
+        <Button variant="primary" onClick={onNew}>
+          <Plus />
+          Adaugă produs nou
+        </Button>
+      </div>
+
+      <div className="px-6 py-3">
+        <Input
+          placeholder="Caută după nume..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="px-6 py-4">
+        {isLoading ? (
+          <Text className="text-ui-fg-muted">Se încarcă...</Text>
+        ) : products.length === 0 ? (
+          <Text className="text-ui-fg-muted">Niciun produs găsit.</Text>
+        ) : (
+          <Table>
+            <Table.Header>
+              <Table.Row>
+                <Table.HeaderCell>Imagine</Table.HeaderCell>
+                <Table.HeaderCell>Nume</Table.HeaderCell>
+                <Table.HeaderCell>Status</Table.HeaderCell>
+                <Table.HeaderCell>Variante</Table.HeaderCell>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {products.map((p) => (
+                <Table.Row
+                  key={p.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/products/${p.id}`)}
+                >
+                  <Table.Cell>
+                    {p.thumbnail ? (
+                      <img
+                        src={p.thumbnail}
+                        alt={p.title}
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded bg-ui-bg-subtle" />
+                    )}
+                  </Table.Cell>
+                  <Table.Cell className="font-medium">{p.title}</Table.Cell>
+                  <Table.Cell>
+                    <Badge
+                      size="2xsmall"
+                      color={p.status === "published" ? "green" : "grey"}
+                    >
+                      {STATUS_LABEL[p.status] || p.status}
+                    </Badge>
+                  </Table.Cell>
+                  <Table.Cell>{p.variants?.length ?? 0}</Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
+        )}
+      </div>
+    </Container>
+  )
+}
+
+/* ---------------------------- CREATE ---------------------------- */
+const CreateProduct = ({
+  onBack,
+  navigate,
+  queryClient,
+}: {
+  onBack: () => void
+  navigate: (to: string) => void
+  queryClient: ReturnType<typeof useQueryClient>
+}) => {
   const [title, setTitle] = useState("")
   const [status, setStatus] = useState<"draft" | "published">("draft")
   const [teamId, setTeamId] = useState("")
@@ -40,6 +198,12 @@ const NewProductPage = () => {
     Record<string, { included: boolean; sizes: Set<string> }>
   >({})
   const [colorIds, setColorIds] = useState<Set<string>>(new Set())
+  const [customFields, setCustomFields] = useState<CustomField[]>([])
+  const [newFieldLabel, setNewFieldLabel] = useState("")
+  const [newFieldType, setNewFieldType] = useState<"text" | "number">("text")
+  const [newFieldRequired, setNewFieldRequired] = useState(false)
+  const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
 
   const { data: teamData } = useQuery<{ teams: Team[] }>({
     queryFn: () => sdk.client.fetch("/admin/teams", { query: { limit: 100 } }),
@@ -76,7 +240,7 @@ const NewProductPage = () => {
   const getState = (c: Croi) =>
     selection[c.id] || { included: false, sizes: new Set<string>() }
 
-  const toggleCroi = (c: Croi) => {
+  const toggleCroi = (c: Croi) =>
     setSelection((prev) => {
       const cur = prev[c.id] || { included: false, sizes: new Set<string>() }
       const included = !cur.included
@@ -91,15 +255,13 @@ const NewProductPage = () => {
         },
       }
     })
-  }
-  const toggleSize = (c: Croi, size: string) => {
+  const toggleSize = (c: Croi, size: string) =>
     setSelection((prev) => {
       const cur = prev[c.id] || { included: true, sizes: new Set<string>() }
       const next = new Set(cur.sizes)
       next.has(size) ? next.delete(size) : next.add(size)
       return { ...prev, [c.id]: { included: true, sizes: next } }
     })
-  }
   const toggleColor = (id: string) =>
     setColorIds((prev) => {
       const next = new Set(prev)
@@ -107,13 +269,65 @@ const NewProductPage = () => {
       return next
     })
 
+  const addCustomField = () => {
+    const label = newFieldLabel.trim()
+    if (!label) return
+    const key = slugifyKey(label)
+    if (!key || customFields.some((f) => f.key === key)) {
+      toast.error("Etichetă invalidă sau deja existentă.")
+      return
+    }
+    setCustomFields([
+      ...customFields,
+      { key, label, type: newFieldType, required: newFieldRequired },
+    ])
+    setNewFieldLabel("")
+    setNewFieldRequired(false)
+  }
+  const removeCustomField = (key: string) =>
+    setCustomFields(customFields.filter((f) => f.key !== key))
+
+  const addPredefined = (pf: (typeof PREDEFINED_FIELDS)[number]) => {
+    const key = slugifyKey(pf.label)
+    if (customFields.some((f) => f.key === key)) return
+    setCustomFields((prev) => [
+      ...prev,
+      { key, label: pf.label, type: pf.type, required: pf.required },
+    ])
+  }
+
+  const handleUpload = async (files: FileList | null) => {
+    if (!files?.length) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      Array.from(files).forEach((f) => fd.append("files", f))
+      const response = await fetch("/admin/uploads", {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.message || "Încărcare eșuată")
+      }
+      const data = (await response.json()) as { files: { url: string }[] }
+      setImageUrls((prev) => [...prev, ...data.files.map((f) => f.url)])
+    } catch (e) {
+      toast.error("Eroare la încărcare: " + (e as Error).message)
+    } finally {
+      setUploading(false)
+    }
+  }
+  const removeImage = (url: string) =>
+    setImageUrls((prev) => prev.filter((u) => u !== url))
+
   const totalVariants = useMemo(() => {
     const base = crois.reduce((acc, c) => {
       const st = getState(c)
       return acc + (st.included ? st.sizes.size : 0)
     }, 0)
-    const colorMult = colorIds.size || 1
-    return base * colorMult
+    return base * (colorIds.size || 1)
   }, [crois, selection, colorIds])
 
   const createMutation = useMutation({
@@ -139,13 +353,16 @@ const NewProductPage = () => {
             description: description.trim() || null,
             selections,
             color_ids: Array.from(colorIds),
+            customization_fields: customFields,
+            image_urls: imageUrls,
           },
         }
       )
       return product
     },
     onSuccess: (product) => {
-      toast.success("Produs creat cu succes!")
+      queryClient.invalidateQueries({ queryKey: ["hub-products"] })
+      toast.success("Produs creat! Asociază imaginile pe culori din pagina produsului.")
       navigate(`/products/${product.id}`)
     },
     onError: (e) => toast.error("Eroare: " + (e as Error).message),
@@ -160,12 +377,17 @@ const NewProductPage = () => {
 
   return (
     <Container className="divide-y p-0">
-      <div className="px-6 py-4">
-        <Heading level="h1">Adaugă produs</Heading>
-        <Text size="small" className="text-ui-fg-muted mt-1">
-          Configurează totul într-un singur loc: detalii, croiuri, mărimi,
-          culori și preț.
-        </Text>
+      <div className="flex items-center gap-3 px-6 py-4">
+        <IconButton variant="transparent" onClick={onBack}>
+          <ArrowLeft />
+        </IconButton>
+        <div>
+          <Heading level="h1">Adaugă produs</Heading>
+          <Text size="small" className="text-ui-fg-muted mt-1">
+            Configurează produsul. Asocierea imaginilor pe culori se face în
+            pagina produsului, după creare.
+          </Text>
+        </div>
       </div>
 
       <div className="px-6 py-6 space-y-8 max-w-3xl">
@@ -245,19 +467,55 @@ const NewProductPage = () => {
               </label>
             </div>
           </div>
+        </div>
 
-          <div>
-            <Label htmlFor="np-desc" className="font-medium">
-              Descriere (opțional)
-            </Label>
-            <Textarea
-              id="np-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descrierea produsului..."
-              className="mt-2"
-            />
+        {/* Images */}
+        <div className="space-y-3">
+          <Heading level="h2" className="text-base">
+            Imagini
+          </Heading>
+          <div className="flex flex-wrap gap-3">
+            {imageUrls.map((url) => (
+              <div key={url} className="relative w-24 h-24">
+                <img
+                  src={url}
+                  alt=""
+                  className="w-24 h-24 object-cover rounded border border-ui-border-base"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(url)}
+                  className="absolute -top-2 -right-2 bg-ui-bg-base border border-ui-border-base rounded-full p-0.5"
+                >
+                  <XMark className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            <label className="w-24 h-24 flex flex-col items-center justify-center gap-1 rounded border border-dashed border-ui-border-strong cursor-pointer hover:bg-ui-bg-subtle text-ui-fg-muted text-xs">
+              <Plus />
+              {uploading ? "..." : "Adaugă"}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleUpload(e.target.files)}
+              />
+            </label>
           </div>
+        </div>
+
+        {/* Description */}
+        <div className="space-y-2" data-color-mode="light">
+          <Heading level="h2" className="text-base">
+            Descriere produs
+          </Heading>
+          <MDEditor
+            value={description}
+            onChange={(v) => setDescription(v || "")}
+            height={240}
+            previewOptions={{ remarkPlugins: [remarkBreaks] }}
+          />
         </div>
 
         {/* Croi + sizes */}
@@ -353,8 +611,93 @@ const NewProductPage = () => {
               })}
             </div>
           )}
+          {colorIds.size > 0 && (
+            <Text size="small" className="text-ui-fg-muted">
+              După creare, asociază imaginile pe fiecare culoare din pagina
+              produsului (secțiunea Imagini variante).
+            </Text>
+          )}
         </div>
 
+        {/* Personalizare */}
+        <div className="space-y-3">
+          <Heading level="h2" className="text-base">
+            Personalizare produs (opțional)
+          </Heading>
+          <Text size="small" className="text-ui-fg-muted">
+            Câmpuri pe care clientul le completează la comandă (ex. nume pe
+            tricou, număr).
+          </Text>
+
+          {/* Quick-add predefined */}
+          <div className="flex flex-wrap gap-2">
+            {PREDEFINED_FIELDS.filter(
+              (pf) => !customFields.some((f) => f.key === slugifyKey(pf.label))
+            ).map((pf) => (
+              <button
+                key={pf.label}
+                type="button"
+                onClick={() => addPredefined(pf)}
+                className="flex items-center gap-1 rounded-full border border-dashed border-ui-border-strong px-3 py-1 text-sm text-ui-fg-subtle hover:bg-ui-bg-subtle"
+              >
+                <Plus className="w-3 h-3" />
+                {pf.label}
+              </button>
+            ))}
+          </div>
+
+          {customFields.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {customFields.map((f) => (
+                <Badge key={f.key} className="flex items-center gap-1">
+                  {f.label} ({f.type === "text" ? "text" : "număr"}
+                  {f.required ? ", obligatoriu" : ""})
+                  <button
+                    type="button"
+                    onClick={() => removeCustomField(f.key)}
+                    className="ml-1"
+                  >
+                    <XMark className="w-3 h-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-col xsmall:flex-row gap-2 xsmall:items-end">
+            <div className="flex-1">
+              <Label className="text-sm">Etichetă câmp</Label>
+              <Input
+                value={newFieldLabel}
+                onChange={(e) => setNewFieldLabel(e.target.value)}
+                placeholder="ex. Nume pe tricou"
+                className="mt-1"
+              />
+            </div>
+            <select
+              value={newFieldType}
+              onChange={(e) =>
+                setNewFieldType(e.target.value as "text" | "number")
+              }
+              className="rounded-md border border-ui-border-base bg-ui-bg-field px-3 py-2 text-sm"
+            >
+              <option value="text">Text</option>
+              <option value="number">Număr</option>
+            </select>
+            <label className="flex items-center gap-1.5 cursor-pointer px-1">
+              <Checkbox
+                checked={newFieldRequired}
+                onCheckedChange={() => setNewFieldRequired((v) => !v)}
+              />
+              <span className="text-sm">Obligatoriu</span>
+            </label>
+            <Button variant="secondary" onClick={addCustomField}>
+              <Plus />
+              Adaugă
+            </Button>
+          </div>
+        </div>
+
+        {/* Submit */}
         <div className="flex items-center gap-4 pt-2">
           <Button
             variant="primary"
@@ -367,11 +710,9 @@ const NewProductPage = () => {
                   totalVariants ? ` (${totalVariants} variante)` : ""
                 }`}
           </Button>
-          {totalVariants > 0 && (
-            <Text size="small" className="text-ui-fg-muted">
-              {totalVariants} variante vor fi generate
-            </Text>
-          )}
+          <Button variant="secondary" onClick={onBack}>
+            Anulează
+          </Button>
         </div>
       </div>
     </Container>
@@ -379,8 +720,8 @@ const NewProductPage = () => {
 }
 
 export const config = defineRouteConfig({
-  label: "Adaugă produs",
-  icon: PlusMini,
+  label: "Produse",
+  icon: TagSolid,
 })
 
-export default NewProductPage
+export default ProductHubPage

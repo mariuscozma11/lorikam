@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-label="Hero placeholder">
+  <defs>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M80 0H0V80" fill="none" stroke="#d4d4d8" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1920" height="1080" fill="#e4e4e7"/>
+  <rect width="1920" height="1080" fill="url(#grid)"/>
+  <rect x="2" y="2" width="1916" height="1076" fill="none" stroke="#a1a1aa" stroke-width="4"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#52525b">
+    <text x="48" y="80" font-size="40" font-weight="700">IMAGINE HERO</text>
+    <text x="48" y="130" font-size="32" font-weight="400" fill="#71717a">1920 × 1080 px (16:9)</text>
+    <text x="1872" y="1040" font-size="28" font-weight="400" text-anchor="end" fill="#71717a">Placeholder — înlocuiește cu grafica finală</text>
+  </g>
+</svg>

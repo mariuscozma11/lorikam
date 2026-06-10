@@ -6,7 +6,7 @@ const Hero = () => {
   return (
     <div className="relative w-full h-[70vh] min-h-[420px] border-b border-ui-border-base overflow-hidden">
       <Image
-        src="/lorikam-shop.jpeg"
+        src="/hero-placeholder.svg"
         alt="Lorikam"
         fill
         priority

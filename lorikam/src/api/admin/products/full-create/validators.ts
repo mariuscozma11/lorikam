@@ -16,6 +16,20 @@ export const FullCreateProductSchema = z.object({
   color_ids: z.array(z.string()).optional(),
   manage_inventory: z.boolean().optional(),
   description: z.string().nullable().optional(),
+  customization_fields: z
+    .array(
+      z.object({
+        key: z.string(),
+        label: z.string(),
+        type: z.enum(["text", "number"]),
+        required: z.boolean().optional(),
+        maxLength: z.number().optional(),
+        min: z.number().optional(),
+        max: z.number().optional(),
+      })
+    )
+    .optional(),
+  image_urls: z.array(z.string()).optional(),
 })
 
 export type FullCreateProductType = z.infer<typeof FullCreateProductSchema>

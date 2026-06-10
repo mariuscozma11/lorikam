@@ -44,6 +44,9 @@ module.exports = defineConfig({
       resolve: "./src/modules/variant-preset",
     },
     {
+      resolve: "./src/modules/content-page",
+    },
+    {
       resolve: "@medusajs/medusa/payment",
       options: {
         providers: [

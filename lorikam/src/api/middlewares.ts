@@ -4,6 +4,7 @@ import {
   validateAndTransformQuery,
 } from "@medusajs/framework"
 import { createFindParams } from "@medusajs/medusa/api/utils/validators"
+import multer from "multer"
 import { UpdateShippingSettingsSchema } from "./admin/shipping-settings/validators"
 import {
   CreateCustomerDiscountSchema,
@@ -26,8 +27,17 @@ import {
 } from "./admin/crois/validators"
 import { BuildVariantsSchema } from "./admin/products/[id]/build-variants/validators"
 import { FullCreateProductSchema } from "./admin/products/full-create/validators"
+import {
+  CreateContentPageSchema,
+  UpdateContentPageSchema,
+} from "./admin/content-pages/validators"
 
 export const GetColorsSchema = createFindParams()
+
+const uploadMulter = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 10 },
+})
 
 export default defineMiddlewares({
   routes: [
@@ -106,6 +116,22 @@ export default defineMiddlewares({
       matcher: "/admin/products/full-create",
       method: "POST",
       middlewares: [validateAndTransformBody(FullCreateProductSchema)],
+    },
+    {
+      matcher: "/admin/uploads",
+      method: "POST",
+      // @ts-ignore - multer middleware
+      middlewares: [uploadMulter.array("files")],
+    },
+    {
+      matcher: "/admin/content-pages",
+      method: "POST",
+      middlewares: [validateAndTransformBody(CreateContentPageSchema)],
+    },
+    {
+      matcher: "/admin/content-pages/:id",
+      method: "POST",
+      middlewares: [validateAndTransformBody(UpdateContentPageSchema)],
     },
   ],
 })
