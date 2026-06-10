@@ -17,24 +17,6 @@ export default async function seedContentPages({ container }: ExecArgs) {
     content: string
   }[] = [
     {
-      slug: "about",
-      title: "Despre noi",
-      content: `## Despre Lorikam
-
-[Descrie pe scurt povestea brandului Lorikam: cine sunteți, ce produceți și ce vă diferențiază.]
-
-Lorikam produce articole sportive și echipamente oficiale pentru echipele partenere, combinând materiale premium cu un design dedicat performanței.
-
-### Misiunea noastră
-
-[Completează cu misiunea companiei.]
-
-### Contact
-
-- **Email:** [email@exemplu.ro]
-- **Telefon:** [+40 7xx xxx xxx]`,
-    },
-    {
       slug: "termeni-si-conditii",
       title: "Termeni și condiții",
       content: `_Ultima actualizare: [DATĂ]_

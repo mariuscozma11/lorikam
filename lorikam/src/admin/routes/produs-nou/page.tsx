@@ -20,7 +20,6 @@ import { useNavigate } from "react-router-dom"
 import MDEditor from "@uiw/react-md-editor"
 import remarkBreaks from "remark-breaks"
 import { sdk } from "../../lib/sdk"
-import VariantImageAssigner from "../../components/variant-image-assigner"
 import ProductDetailsEditor from "../../components/product-details-editor"
 import ProductImagesPanel from "../../components/product-images-panel"
 import ProductTeamWidget from "../../widgets/product-team"
@@ -221,8 +220,8 @@ const CreateProduct = ({
   const [newFieldType, setNewFieldType] = useState<"text" | "number">("text")
   const [newFieldRequired, setNewFieldRequired] = useState(false)
   const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [imageColors, setImageColors] = useState<Record<string, string>>({})
   const [uploading, setUploading] = useState(false)
-  const [createdProductId, setCreatedProductId] = useState<string | null>(null)
 
   const { data: teamData } = useQuery<{ teams: Team[] }>({
     queryFn: () => sdk.client.fetch("/admin/teams", { query: { limit: 100 } }),
@@ -338,8 +337,14 @@ const CreateProduct = ({
       setUploading(false)
     }
   }
-  const removeImage = (url: string) =>
+  const removeImage = (url: string) => {
     setImageUrls((prev) => prev.filter((u) => u !== url))
+    setImageColors((prev) => {
+      const next = { ...prev }
+      delete next[url]
+      return next
+    })
+  }
 
   const totalVariants = useMemo(() => {
     const base = crois.reduce((acc, c) => {
@@ -377,12 +382,45 @@ const CreateProduct = ({
           },
         }
       )
+
+      // Auto-link color-tagged images to that color's variants
+      const tagged = Object.entries(imageColors).filter(([, color]) => color)
+      if (tagged.length && colorIds.size > 0) {
+        const { product: full } = await sdk.admin.product.retrieve(product.id, {
+          fields:
+            "id,images.id,images.url,variants.id,variants.options,options.id,options.title",
+        } as any)
+        const optTitle: Record<string, string> = {}
+        for (const o of (full as any).options || []) optTitle[o.id] = o.title
+        const colorToVariants: Record<string, string[]> = {}
+        for (const v of (full as any).variants || []) {
+          const co = (v.options || []).find(
+            (o: any) => optTitle[o.option_id]?.toLowerCase() === "culoare"
+          )
+          if (co) (colorToVariants[co.value] ||= []).push(v.id)
+        }
+        const urlToImageId: Record<string, string> = {}
+        for (const img of (full as any).images || [])
+          urlToImageId[img.url] = img.id
+
+        for (const [url, color] of tagged) {
+          const imageId = urlToImageId[url]
+          const vids = colorToVariants[color]
+          if (imageId && vids?.length) {
+            await sdk.admin.product.batchImageVariants(product.id, imageId, {
+              add: vids,
+              remove: [],
+            } as any)
+          }
+        }
+      }
+
       return product
     },
     onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["hub-products"] })
-      toast.success("Produs creat! Asociază imaginile pe culori mai jos.")
-      setCreatedProductId(product.id)
+      toast.success("Produs creat!")
+      onEdit(product.id)
     },
     onError: (e) => toast.error("Eroare: " + (e as Error).message),
   })
@@ -393,32 +431,6 @@ const CreateProduct = ({
     !isNaN(parseFloat(price)) &&
     parseFloat(price) > 0 &&
     totalVariants > 0
-
-  // Step 2 — after the product is created, associate images to colors inline
-  if (createdProductId) {
-    return (
-      <Container className="divide-y p-0">
-        <div className="px-6 py-4">
-          <Heading level="h1">Asociază imaginile pe culori</Heading>
-          <Text size="small" className="text-ui-fg-muted mt-1">
-            Selectează o imagine, apoi bifează culorile/variantele cărora le
-            aparține. Poți sări peste acest pas.
-          </Text>
-        </div>
-
-        <VariantImageAssigner productId={createdProductId} bare />
-
-        <div className="flex items-center gap-3 px-6 py-4">
-          <Button variant="primary" onClick={() => onEdit(createdProductId)}>
-            Editează produsul
-          </Button>
-          <Button variant="secondary" onClick={onBack}>
-            Înapoi la produse
-          </Button>
-        </div>
-      </Container>
-    )
-  }
 
   return (
     <Container className="divide-y p-0">
@@ -510,42 +522,6 @@ const CreateProduct = ({
                 <span className="text-sm">Gestionează stocul</span>
               </label>
             </div>
-          </div>
-        </div>
-
-        {/* Images */}
-        <div className="space-y-3">
-          <Heading level="h2" className="text-base">
-            Imagini
-          </Heading>
-          <div className="flex flex-wrap gap-3">
-            {imageUrls.map((url) => (
-              <div key={url} className="relative w-24 h-24">
-                <img
-                  src={url}
-                  alt=""
-                  className="w-24 h-24 object-cover rounded border border-ui-border-base"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(url)}
-                  className="absolute -top-2 -right-2 bg-ui-bg-base border border-ui-border-base rounded-full p-0.5"
-                >
-                  <XMark className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-            <label className="w-24 h-24 flex flex-col items-center justify-center gap-1 rounded border border-dashed border-ui-border-strong cursor-pointer hover:bg-ui-bg-subtle text-ui-fg-muted text-xs">
-              <Plus />
-              {uploading ? "..." : "Adaugă"}
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => handleUpload(e.target.files)}
-              />
-            </label>
           </div>
         </div>
 
@@ -655,12 +631,69 @@ const CreateProduct = ({
               })}
             </div>
           )}
-          {colorIds.size > 0 && (
-            <Text size="small" className="text-ui-fg-muted">
-              După creare vei putea asocia imaginile pe fiecare culoare (pasul
-              următor).
-            </Text>
-          )}
+        </div>
+
+        {/* Images */}
+        <div className="space-y-3">
+          <Heading level="h2" className="text-base">
+            Imagini
+          </Heading>
+          <Text size="small" className="text-ui-fg-muted">
+            Încarcă imaginile și asociază fiecare imagine cu o culoare. La creare
+            vor fi legate automat de variantele culorii.
+          </Text>
+          <div className="flex flex-wrap gap-3">
+            {imageUrls.map((url) => (
+              <div key={url} className="w-28">
+                <div className="relative w-28 h-28">
+                  <img
+                    src={url}
+                    alt=""
+                    className="w-28 h-28 object-cover rounded border border-ui-border-base"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(url)}
+                    className="absolute -top-2 -right-2 bg-ui-bg-base border border-ui-border-base rounded-full p-0.5"
+                  >
+                    <XMark className="w-4 h-4" />
+                  </button>
+                </div>
+                {colorIds.size > 0 && (
+                  <select
+                    value={imageColors[url] || ""}
+                    onChange={(e) =>
+                      setImageColors((prev) => ({
+                        ...prev,
+                        [url]: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-28 rounded-md border border-ui-border-base bg-ui-bg-field px-2 py-1 text-xs"
+                  >
+                    <option value="">Toate culorile</option>
+                    {colors
+                      .filter((c) => colorIds.has(c.id))
+                      .map((c) => (
+                        <option key={c.id} value={c.name}>
+                          {c.name}
+                        </option>
+                      ))}
+                  </select>
+                )}
+              </div>
+            ))}
+            <label className="w-28 h-28 flex flex-col items-center justify-center gap-1 rounded border border-dashed border-ui-border-strong cursor-pointer hover:bg-ui-bg-subtle text-ui-fg-muted text-xs">
+              <Plus />
+              {uploading ? "..." : "Adaugă"}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleUpload(e.target.files)}
+              />
+            </label>
+          </div>
         </div>
 
         {/* Personalizare */}
