@@ -1,13 +1,27 @@
 # Lorikam — Project Status & Delivery Plan
 
-_Last updated: 2026-06-02_
+_Last updated: 2026-06-10_
 
 Stack: **Medusa v2.13.1** backend (`lorikam/`) + **Next.js 15** storefront (`lorikam-storefront/`).
 Market: **Romania + Europe**, currency **RON**, language **Romanian**.
 
+> See **`DELIVERY_PLAN.md`** for: what to test/add, CI/CD, hosting, and the full manual test plan.
+
 ---
 
-## ✅ Done today (2026-06-02)
+## ✅ Done (2026-06-10 session)
+
+- **Configurable variant system**: `variantPreset` module (size presets + croi linked to presets), admin settings pages, defaults seeded.
+- **Custom product hub** (`Produse`): list → create → edit → delete, fully replacing the native product page. One-step create (croi×size×color variants, price, team/color links, images with per-image color tagging auto-linked, description, personalizare). Reuses all custom widgets as a composed editor.
+- **Content CMS** (`contentPage`): admin markdown editor (`Documente`) + storefront legal pages (T&C, privacy, cookies, returns).
+- **Designed About page** with hero, story, value cards, animated stats, CTA.
+- **Uploadable site graphics** (`siteSetting`): admin `Imagini site` uploads logo, hero, banners, About images, OG image; storefront uses them with fallback.
+- **Breadcrumbs** across all shop/product/content pages.
+- **Bug fixes**: image→color auto-link (verified), upload endpoint (use built-in), publishable key/region.
+
+---
+
+## ✅ Done earlier (2026-06-02)
 
 ### Storefront
 - Fixed boot: correct publishable API key + default region `ro` in `.env.local`.
