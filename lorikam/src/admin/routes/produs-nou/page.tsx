@@ -771,6 +771,7 @@ const EditProduct = ({
   productId: string
   onBack: () => void
 }) => {
+  const queryClient = useQueryClient()
   const { data, isLoading } = useQuery<{ product: any }>({
     queryFn: () =>
       sdk.admin.product.retrieve(productId, {
@@ -780,19 +781,48 @@ const EditProduct = ({
   })
   const product = data?.product
 
+  const deleteMutation = useMutation({
+    mutationFn: () => sdk.admin.product.delete(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hub-products"] })
+      toast.success("Produsul a fost șters!")
+      onBack()
+    },
+    onError: (e) => toast.error("Eroare: " + (e as Error).message),
+  })
+
   return (
     <div>
       <Container className="p-0 mb-4">
-        <div className="flex items-center gap-3 px-6 py-4">
-          <IconButton variant="transparent" onClick={onBack}>
-            <ArrowLeft />
-          </IconButton>
-          <div>
-            <Heading level="h1">{product?.title || "Editează produs"}</Heading>
-            <Text size="small" className="text-ui-fg-muted mt-1">
-              Editează toate detaliile produsului într-un singur loc.
-            </Text>
+        <div className="flex items-center justify-between gap-3 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <IconButton variant="transparent" onClick={onBack}>
+              <ArrowLeft />
+            </IconButton>
+            <div>
+              <Heading level="h1">
+                {product?.title || "Editează produs"}
+              </Heading>
+              <Text size="small" className="text-ui-fg-muted mt-1">
+                Editează toate detaliile produsului într-un singur loc.
+              </Text>
+            </div>
           </div>
+          <Button
+            variant="danger"
+            onClick={() => {
+              if (
+                confirm(
+                  "Sigur vrei să ștergi acest produs? Acțiunea este ireversibilă."
+                )
+              )
+                deleteMutation.mutate()
+            }}
+            disabled={deleteMutation.isPending}
+          >
+            <Trash />
+            {deleteMutation.isPending ? "Se șterge..." : "Șterge produs"}
+          </Button>
         </div>
       </Container>
 
