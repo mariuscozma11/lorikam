@@ -90,11 +90,18 @@ const ProductColorsWidget = ({
           )
         },
       })
+      // Refresh variant-dependent panels (builder, inventory, images)
+      await queryClient.invalidateQueries({
+        queryKey: ["product-inventory", product.id],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ["product-variants-images", product.id],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ["product-images", product.id],
+      })
       setHasChanges(false)
       toast.success("Culorile și variantele au fost salvate!")
-
-      // Reload the page to show updated variants
-      window.location.reload()
     },
     onError: (error) => {
       toast.error("Eroare: " + (error as Error).message)

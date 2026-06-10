@@ -21,6 +21,14 @@ import MDEditor from "@uiw/react-md-editor"
 import remarkBreaks from "remark-breaks"
 import { sdk } from "../../lib/sdk"
 import VariantImageAssigner from "../../components/variant-image-assigner"
+import ProductDetailsEditor from "../../components/product-details-editor"
+import ProductImagesPanel from "../../components/product-images-panel"
+import ProductTeamWidget from "../../widgets/product-team"
+import VariantBuilderWidget from "../../widgets/variant-builder"
+import ProductColorsWidget from "../../widgets/product-colors"
+import ProductInventoryWidget from "../../widgets/product-inventory"
+import ProductDescriptionWidget from "../../widgets/product-description"
+import ProductCustomizationWidget from "../../widgets/product-customization"
 
 type Team = { id: string; name: string }
 type SizePreset = { id: string; name: string; sizes: string[] }
@@ -65,28 +73,37 @@ const PREDEFINED_FIELDS: { label: string; type: "text" | "number"; required: boo
 ]
 
 const ProductHubPage = () => {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [view, setView] = useState<"list" | "create">("list")
+  const [view, setView] = useState<"list" | "create" | "edit">("list")
+  const [editingId, setEditingId] = useState<string | null>(null)
 
-  return view === "list" ? (
-    <ProductList onNew={() => setView("create")} navigate={navigate} />
-  ) : (
-    <CreateProduct
-      onBack={() => setView("list")}
-      navigate={navigate}
-      queryClient={queryClient}
-    />
-  )
+  const openEdit = (id: string) => {
+    setEditingId(id)
+    setView("edit")
+  }
+
+  if (view === "create") {
+    return (
+      <CreateProduct
+        onBack={() => setView("list")}
+        onEdit={openEdit}
+        queryClient={queryClient}
+      />
+    )
+  }
+  if (view === "edit" && editingId) {
+    return <EditProduct productId={editingId} onBack={() => setView("list")} />
+  }
+  return <ProductList onNew={() => setView("create")} onSelect={openEdit} />
 }
 
 /* ----------------------------- LIST ----------------------------- */
 const ProductList = ({
   onNew,
-  navigate,
+  onSelect,
 }: {
   onNew: () => void
-  navigate: (to: string) => void
+  onSelect: (id: string) => void
 }) => {
   const [search, setSearch] = useState("")
 
@@ -146,7 +163,7 @@ const ProductList = ({
                 <Table.Row
                   key={p.id}
                   className="cursor-pointer"
-                  onClick={() => navigate(`/products/${p.id}`)}
+                  onClick={() => onSelect(p.id)}
                 >
                   <Table.Cell>
                     {p.thumbnail ? (
@@ -182,11 +199,11 @@ const ProductList = ({
 /* ---------------------------- CREATE ---------------------------- */
 const CreateProduct = ({
   onBack,
-  navigate,
+  onEdit,
   queryClient,
 }: {
   onBack: () => void
-  navigate: (to: string) => void
+  onEdit: (id: string) => void
   queryClient: ReturnType<typeof useQueryClient>
 }) => {
   const [title, setTitle] = useState("")
@@ -392,11 +409,8 @@ const CreateProduct = ({
         <VariantImageAssigner productId={createdProductId} bare />
 
         <div className="flex items-center gap-3 px-6 py-4">
-          <Button
-            variant="primary"
-            onClick={() => navigate(`/products/${createdProductId}`)}
-          >
-            Mergi la pagina produsului
+          <Button variant="primary" onClick={() => onEdit(createdProductId)}>
+            Editează produsul
           </Button>
           <Button variant="secondary" onClick={onBack}>
             Înapoi la produse
@@ -746,6 +760,65 @@ const CreateProduct = ({
         </div>
       </div>
     </Container>
+  )
+}
+
+/* ----------------------------- EDIT ----------------------------- */
+const EditProduct = ({
+  productId,
+  onBack,
+}: {
+  productId: string
+  onBack: () => void
+}) => {
+  const { data, isLoading } = useQuery<{ product: any }>({
+    queryFn: () =>
+      sdk.admin.product.retrieve(productId, {
+        fields: "id,title,status,description,metadata",
+      } as any) as any,
+    queryKey: ["product", productId],
+  })
+  const product = data?.product
+
+  return (
+    <div>
+      <Container className="p-0 mb-4">
+        <div className="flex items-center gap-3 px-6 py-4">
+          <IconButton variant="transparent" onClick={onBack}>
+            <ArrowLeft />
+          </IconButton>
+          <div>
+            <Heading level="h1">{product?.title || "Editează produs"}</Heading>
+            <Text size="small" className="text-ui-fg-muted mt-1">
+              Editează toate detaliile produsului într-un singur loc.
+            </Text>
+          </div>
+        </div>
+      </Container>
+
+      {isLoading || !product ? (
+        <Container className="p-0">
+          <div className="px-6 py-8">
+            <Text className="text-ui-fg-muted">Se încarcă...</Text>
+          </div>
+        </Container>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <ProductDetailsEditor
+            productId={productId}
+            initialTitle={product.title || ""}
+            initialStatus={product.status || "draft"}
+          />
+          <ProductTeamWidget data={product} />
+          <VariantBuilderWidget data={product} />
+          <ProductColorsWidget data={product} />
+          <ProductImagesPanel productId={productId} />
+          <ProductInventoryWidget data={product} />
+          <ProductDescriptionWidget data={product} />
+          <ProductCustomizationWidget data={product} />
+        </div>
+      )}
+    </div>
   )
 }
 
