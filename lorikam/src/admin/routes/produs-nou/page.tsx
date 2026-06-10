@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom"
 import MDEditor from "@uiw/react-md-editor"
 import remarkBreaks from "remark-breaks"
 import { sdk } from "../../lib/sdk"
+import VariantImageAssigner from "../../components/variant-image-assigner"
 
 type Team = { id: string; name: string }
 type SizePreset = { id: string; name: string; sizes: string[] }
@@ -204,6 +205,7 @@ const CreateProduct = ({
   const [newFieldRequired, setNewFieldRequired] = useState(false)
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [createdProductId, setCreatedProductId] = useState<string | null>(null)
 
   const { data: teamData } = useQuery<{ teams: Team[] }>({
     queryFn: () => sdk.client.fetch("/admin/teams", { query: { limit: 100 } }),
@@ -362,8 +364,8 @@ const CreateProduct = ({
     },
     onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["hub-products"] })
-      toast.success("Produs creat! Asociază imaginile pe culori din pagina produsului.")
-      navigate(`/products/${product.id}`)
+      toast.success("Produs creat! Asociază imaginile pe culori mai jos.")
+      setCreatedProductId(product.id)
     },
     onError: (e) => toast.error("Eroare: " + (e as Error).message),
   })
@@ -375,6 +377,35 @@ const CreateProduct = ({
     parseFloat(price) > 0 &&
     totalVariants > 0
 
+  // Step 2 — after the product is created, associate images to colors inline
+  if (createdProductId) {
+    return (
+      <Container className="divide-y p-0">
+        <div className="px-6 py-4">
+          <Heading level="h1">Asociază imaginile pe culori</Heading>
+          <Text size="small" className="text-ui-fg-muted mt-1">
+            Selectează o imagine, apoi bifează culorile/variantele cărora le
+            aparține. Poți sări peste acest pas.
+          </Text>
+        </div>
+
+        <VariantImageAssigner productId={createdProductId} bare />
+
+        <div className="flex items-center gap-3 px-6 py-4">
+          <Button
+            variant="primary"
+            onClick={() => navigate(`/products/${createdProductId}`)}
+          >
+            Mergi la pagina produsului
+          </Button>
+          <Button variant="secondary" onClick={onBack}>
+            Înapoi la produse
+          </Button>
+        </div>
+      </Container>
+    )
+  }
+
   return (
     <Container className="divide-y p-0">
       <div className="flex items-center gap-3 px-6 py-4">
@@ -384,8 +415,7 @@ const CreateProduct = ({
         <div>
           <Heading level="h1">Adaugă produs</Heading>
           <Text size="small" className="text-ui-fg-muted mt-1">
-            Configurează produsul. Asocierea imaginilor pe culori se face în
-            pagina produsului, după creare.
+            Configurează produsul. Imaginile le asociezi pe culori după creare.
           </Text>
         </div>
       </div>
@@ -613,8 +643,8 @@ const CreateProduct = ({
           )}
           {colorIds.size > 0 && (
             <Text size="small" className="text-ui-fg-muted">
-              După creare, asociază imaginile pe fiecare culoare din pagina
-              produsului (secțiunea Imagini variante).
+              După creare vei putea asocia imaginile pe fiecare culoare (pasul
+              următor).
             </Text>
           )}
         </div>
