@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { listProducts } from "@lib/data/products"
 import { getRegion, listRegions } from "@lib/data/regions"
 import ProductTemplate from "@modules/products/templates"
+import ProductJsonLd from "@modules/products/components/product-jsonld"
 import { HttpTypes } from "@medusajs/types"
 
 type Props = {
@@ -70,12 +71,15 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     notFound()
   }
 
+  const description =
+    product.description || product.subtitle || `${product.title} — Lorikam`
+
   return {
-    title: `${product.title} | Lorikam`,
-    description: `${product.title}`,
+    title: product.title,
+    description,
     openGraph: {
-      title: `${product.title} | Lorikam`,
-      description: `${product.title}`,
+      title: product.title,
+      description,
       images: product.thumbnail ? [product.thumbnail] : [],
     },
   }
@@ -99,10 +103,17 @@ export default async function ProductPage(props: Props) {
   }
 
   return (
-    <ProductTemplate
-      product={pricedProduct}
-      region={region}
-      countryCode={params.countryCode}
-    />
+    <>
+      <ProductJsonLd
+        product={pricedProduct}
+        region={region}
+        countryCode={params.countryCode}
+      />
+      <ProductTemplate
+        product={pricedProduct}
+        region={region}
+        countryCode={params.countryCode}
+      />
+    </>
   )
 }

@@ -23,10 +23,10 @@ Cuprins:
 - [ ] **Conținut real de completat de client** — paginile legale (`Documente`), valorile din `Setări site` și grafica din `Imagini site`. (Câmpurile/uneltele există; rămâne introducerea datelor reale.)
 
 ### De adăugat (important, nu blocant)
-- [ ] **SEO**: `sitemap.xml`, `robots.txt`, meta description per pagină, date structurate (Product schema.org).
-- [ ] **Analytics**: Google Analytics 4 + Meta Pixel.
-- [ ] **Monitorizare erori**: Sentry (free tier) pe backend + storefront.
-- [ ] **ReCAPTCHA / rate-limit** pe login și formulare (sau Cloudflare în față).
+- [x] **SEO**: `sitemap.xml` (dinamic: produse/categorii/colecții/echipe), `robots.txt`, meta title/description per pagină (template `%s | Lorikam`, titlu/descriere implicite editabile din `Setări site`), date structurate Product schema.org (JSON-LD) pe pagina de produs.
+- [x] **Analytics**: GA4 + Meta Pixel — ID-uri editabile din admin (`Setări site`), se încarcă **doar după consimțământ cookie** (GDPR).
+- [ ] **Monitorizare erori**: Sentry (free tier) — necesită DSN + decizie (adaugă `@sentry/nextjs` + config). Recomandat înainte de lansare.
+- [ ] **ReCAPTCHA / rate-limit** pe login și formulare — cel mai simplu prin **Cloudflare** în față (infra, nu cod).
 
 ### Curățenie cod
 - [x] Erori TS preexistente rezolvate — `npx tsc --noEmit` e verde pe storefront (13 erori: filters, cart/order item, checkout shipping/form, fan-shop templates, country-select, product-display).

@@ -39,6 +39,22 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    title: "SEO & Analytics",
+    description:
+      "Titlul/descrierea implicite pentru SEO și ID-urile de analytics. Analytics se încarcă doar după ce vizitatorul acceptă cookie-urile.",
+    fields: [
+      { key: "seo_title", label: "Titlu SEO implicit", placeholder: "Lorikam — Articole sportive și echipamente" },
+      {
+        key: "seo_description",
+        label: "Descriere SEO implicită",
+        type: "textarea",
+        placeholder: "Magazin online Lorikam: echipamente sportive personalizate și fan shop pentru echipe.",
+      },
+      { key: "ga4_id", label: "Google Analytics 4 (Measurement ID)", placeholder: "G-XXXXXXXXXX" },
+      { key: "meta_pixel_id", label: "Meta Pixel ID", placeholder: "1234567890" },
+    ],
+  },
+  {
     title: "Banner cookie-uri (GDPR)",
     description: "Mesajul de consimțământ afișat la prima vizită.",
     fields: [

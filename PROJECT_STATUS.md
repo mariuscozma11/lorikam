@@ -79,6 +79,8 @@ Market: **Romania + Europe**, currency **RON**, language **Romanian**.
 - [x] Removed dead `featured-products` home component.
 - [x] Fixed all storefront TS errors — `npx tsc --noEmit` is green.
 - [x] CI added (`.github/workflows/ci.yml`): backend build + storefront typecheck.
+- [x] **SEO**: dynamic `sitemap.xml` + `robots.txt`, per-page metadata (template + admin-editable defaults), Product JSON-LD.
+- [x] **Analytics**: GA4 + Meta Pixel, admin-editable IDs, consent-gated.
 - [ ] Decide: keep both the standalone **Variant Builder widget** and the full create page, or drop one.
 - [ ] Higher-res hero/banner image (current 1600px softens on large screens).
 

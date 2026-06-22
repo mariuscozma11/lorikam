@@ -9,7 +9,7 @@ import AboutTeaser from "@modules/home/components/about-teaser"
 import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
 
 export const metadata: Metadata = {
-  title: "Lorikam - Articole sportive de calitate",
+  title: { absolute: "Lorikam — Articole sportive de calitate" },
   description:
     "Magazin online de articole sportive și echipamente oficiale ale echipelor partenere.",
 }

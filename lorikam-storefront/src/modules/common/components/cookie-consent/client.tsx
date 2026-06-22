@@ -27,6 +27,12 @@ export default function CookieConsentClient({ text, policyHref }: Props) {
     } catch {
       // ignore
     }
+    // Let analytics react immediately to the new consent state.
+    try {
+      window.dispatchEvent(new Event("lorikam-consent"))
+    } catch {
+      // ignore
+    }
     setVisible(false)
   }
 
