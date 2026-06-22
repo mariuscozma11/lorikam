@@ -1,0 +1,15 @@
+node_modules
+.medusa
+dist
+build
+.git
+.gitignore
+.env
+.env.*
+!.env.template
+*.log
+.DS_Store
+static
+uploads
+coverage
+.vscode

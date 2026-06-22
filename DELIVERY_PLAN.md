@@ -25,7 +25,7 @@ Cuprins:
 ### De adăugat (important, nu blocant)
 - [x] **SEO**: `sitemap.xml` (dinamic: produse/categorii/colecții/echipe), `robots.txt`, meta title/description per pagină (template `%s | Lorikam`, titlu/descriere implicite editabile din `Setări site`), date structurate Product schema.org (JSON-LD) pe pagina de produs.
 - [x] **Analytics**: GA4 + Meta Pixel — ID-uri editabile din admin (`Setări site`), se încarcă **doar după consimțământ cookie** (GDPR).
-- [ ] **Monitorizare erori**: Sentry (free tier) — necesită DSN + decizie (adaugă `@sentry/nextjs` + config). Recomandat înainte de lansare.
+- [x] ~~Monitorizare erori (Sentry)~~ — **nu se face** (decizie: nu e necesar pentru acest proiect).
 - [ ] **ReCAPTCHA / rate-limit** pe login și formulare — cel mai simplu prin **Cloudflare** în față (infra, nu cod).
 
 ### Curățenie cod
