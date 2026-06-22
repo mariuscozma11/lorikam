@@ -79,7 +79,9 @@ export default function ProductDisplay({ product, region, children }: ProductDis
       if (variant) {
         const newOptions: Record<string, string> = {}
         variant.options?.forEach((opt) => {
-          newOptions[opt.option_id] = opt.value
+          if (opt.option_id) {
+            newOptions[opt.option_id] = opt.value
+          }
         })
         setSelectedOptions(newOptions)
       }

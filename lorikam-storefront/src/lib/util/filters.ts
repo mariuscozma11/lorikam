@@ -246,7 +246,7 @@ function matchesOptionFilters(
     if (product.variants && matchingOptionIds.length > 0) {
       for (const variant of product.variants) {
         const variantOption = variant.options?.find(
-          (opt) => matchingOptionIds.includes(opt.option_id)
+          (opt) => !!opt.option_id && matchingOptionIds.includes(opt.option_id)
         )
         if (variantOption && values.includes(variantOption.value)) {
           hasMatch = true

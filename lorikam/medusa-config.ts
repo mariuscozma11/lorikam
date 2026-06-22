@@ -4,6 +4,27 @@ loadEnv(process.env.NODE_ENV || "development", process.cwd());
 
 const isProduction = process.env.NODE_ENV === "production";
 
+// Notification provider: Resend when a key is set, otherwise the local
+// (console) provider so the dev server boots without credentials.
+const hasResend = !!process.env.RESEND_API_KEY;
+const notificationProvider = hasResend
+  ? {
+      resolve: "./src/modules/resend-notification",
+      id: "resend",
+      options: {
+        channels: ["email"],
+        apiKey: process.env.RESEND_API_KEY,
+        from: process.env.RESEND_FROM || "Lorikam <onboarding@resend.dev>",
+      },
+    }
+  : {
+      resolve: "@medusajs/medusa/notification-local",
+      id: "local",
+      options: {
+        channels: ["email"],
+      },
+    };
+
 if (isProduction) {
   const required = ["JWT_SECRET", "COOKIE_SECRET", "DATABASE_URL", "STORE_CORS", "ADMIN_CORS", "AUTH_CORS"];
   const missing = required.filter((k) => !process.env[k]);
@@ -48,6 +69,12 @@ module.exports = defineConfig({
     },
     {
       resolve: "./src/modules/site-setting",
+    },
+    {
+      resolve: "@medusajs/medusa/notification",
+      options: {
+        providers: [notificationProvider],
+      },
     },
     {
       resolve: "@medusajs/medusa/payment",

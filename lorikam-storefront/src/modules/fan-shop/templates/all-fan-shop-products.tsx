@@ -35,7 +35,7 @@ export default async function AllFanShopProducts({
       queryParams: {
         id: linkedProductIds,
         limit: 100,
-      },
+      } as any,
       countryCode,
     }),
     listColors(),

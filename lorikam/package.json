@@ -27,7 +27,8 @@
     "@medusajs/framework": "2.13.1",
     "@medusajs/medusa": "2.13.1",
     "@uiw/react-md-editor": "^4.0.11",
-    "remark-breaks": "^4.0.0"
+    "remark-breaks": "^4.0.0",
+    "resend": "^6.14.0"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.13.1",

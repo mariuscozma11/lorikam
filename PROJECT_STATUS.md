@@ -53,7 +53,7 @@ Market: **Romania + Europe**, currency **RON**, language **Romanian**.
 ## 🚧 Remaining for client delivery
 
 ### 1. Backend production config — _needs keys/decisions, then env-only_
-- [ ] **Notification provider** (order emails) — pick Resend/SendGrid, add module + key. _Blocker for real ecommerce._
+- [x] **Notification provider** (order emails) — Resend module (`src/modules/resend-notification`) + `order.placed` subscriber done. Set `RESEND_API_KEY` + `RESEND_FROM` in prod env (dev falls back to local console provider).
 - [ ] **File storage** — confirm deploy target; if multi-instance, add `@medusajs/file-s3` (R2/S3) + keys. Single host w/ persistent volume is OK as-is.
 - [ ] **Stripe** — live `STRIPE_API_KEY` + `STRIPE_WEBHOOK_SECRET` in prod env.
 - [ ] **Secrets** — generate strong `JWT_SECRET` + `COOKIE_SECRET` (`openssl rand -base64 48`).
@@ -71,14 +71,15 @@ Market: **Romania + Europe**, currency **RON**, language **Romanian**.
 ### 3. Content / legal — _required for RO ecommerce (ANPC/GDPR)_
 - [ ] **Legal pages** (footer links currently 404): Termeni și condiții, Politica de confidențialitate, Politica de cookie-uri, Retururi și rambursări.
 - [ ] **About page** (`/about` — About teaser links here).
-- [ ] **Cookie consent** banner (GDPR).
-- [ ] Real **social URLs** in footer (`SOCIAL_LINKS`, currently `#`).
-- [ ] Client adds real products, team logos/banners, descriptions.
+- [x] **Cookie consent** banner (GDPR) — admin-configurable (text + toggle) via `Setări site`.
+- [x] **Social URLs + company data** — admin-editable via `Setări site`; footer reads them; ANPC SAL/SOL links added.
+- [ ] Client adds real products, team logos/banners, descriptions, and fills `Setări site` / `Documente`.
 
 ### 4. Code cleanup / polish
-- [ ] Remove dead `featured-products` home component (unused after homepage rebuild).
+- [x] Removed dead `featured-products` home component.
+- [x] Fixed all storefront TS errors — `npx tsc --noEmit` is green.
+- [x] CI added (`.github/workflows/ci.yml`): backend build + storefront typecheck.
 - [ ] Decide: keep both the standalone **Variant Builder widget** and the full create page, or drop one.
-- [ ] Fix pre-existing storefront TS errors (`filters.ts:249`, checkout `service_zone`, etc.) — block a clean `next build`.
 - [ ] Higher-res hero/banner image (current 1600px softens on large screens).
 
 ### 5. QA before handoff

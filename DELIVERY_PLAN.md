@@ -13,13 +13,14 @@ Cuprins:
 ## 1. Ce trebuie testat și adăugat
 
 ### De adăugat înainte de lansare (blocant)
-- [ ] **Emailuri tranzacționale** — provider de notificări (Resend recomandat). Fără el clientul nu primește confirmare de comandă / resetare parolă.
+- [x] **Emailuri tranzacționale** — provider Resend implementat (`lorikam/src/modules/resend-notification`) + subscriber `order.placed` (email confirmare comandă, șablon HTML RO). Rămâne: setezi `RESEND_API_KEY` + `RESEND_FROM` (domeniu verificat) în prod. Fără cheie, dev folosește providerul local (consolă). _Opțional de adăugat: email resetare parolă, expediere._
 - [ ] **Stripe live** — `STRIPE_API_KEY` (live) + `STRIPE_WEBHOOK_SECRET` în prod.
 - [ ] **Stocare fișiere prod** — dacă rulezi pe >1 instanță, `@medusajs/file-s3` cu Cloudflare R2. Pe o singură mașină cu volum persistent, e ok și local.
 - [ ] **Secrete prod** — `JWT_SECRET`, `COOKIE_SECRET` (`openssl rand -base64 48`).
 - [ ] **CORS prod** — domeniile reale în `STORE_CORS` / `ADMIN_CORS` / `AUTH_CORS`.
-- [ ] **Banner consimțământ cookie-uri** (GDPR) — pagina de politică există, lipsește bannerul.
-- [ ] **Date reale** — completează paginile legale (CUI, adresă, ANPC/SOL) din `Documente`, URL-uri reale social în footer, grafica reală din `Imagini site`.
+- [x] **Banner consimțământ cookie-uri** (GDPR) — implementat, text + on/off editabile din admin (`Setări site`); consimțământ salvat în localStorage.
+- [x] **Date firmă + social editabile din admin** — pagină admin nouă `Setări site` (CUI, nr. reg., adresă, email, telefon, Facebook/Instagram); footer le citește; linkuri ANPC SAL/SOL adăugate.
+- [ ] **Conținut real de completat de client** — paginile legale (`Documente`), valorile din `Setări site` și grafica din `Imagini site`. (Câmpurile/uneltele există; rămâne introducerea datelor reale.)
 
 ### De adăugat (important, nu blocant)
 - [ ] **SEO**: `sitemap.xml`, `robots.txt`, meta description per pagină, date structurate (Product schema.org).
@@ -28,8 +29,8 @@ Cuprins:
 - [ ] **ReCAPTCHA / rate-limit** pe login și formulare (sau Cloudflare în față).
 
 ### Curățenie cod
-- [ ] Erori TS preexistente (`filters.ts:249`, `fan-shop templates` `id`, checkout `service_zone`) — blochează un `next build` curat.
-- [ ] Șterge componenta moartă `home/components/featured-products`.
+- [x] Erori TS preexistente rezolvate — `npx tsc --noEmit` e verde pe storefront (13 erori: filters, cart/order item, checkout shipping/form, fan-shop templates, country-select, product-display).
+- [x] Șters componenta moartă `home/components/featured-products`.
 
 ### Teste automate de adăugat (vezi §2 pentru rulare în CI)
 - [ ] **Unit** (Vitest/Jest): `lib/util/filters.ts`, helpers preț, `extractProductOptions`.
@@ -46,35 +47,14 @@ Cuprins:
 - **La PR / push**: lint + typecheck + build (ambele proiecte). Blochează merge dacă pică.
 - **La push pe `main`**: deploy automat (webhook către Coolify/Render).
 
-### `.github/workflows/ci.yml` (punct de plecare)
-```yaml
-name: CI
-on:
-  pull_request:
-  push:
-    branches: [main]
-jobs:
-  backend:
-    runs-on: ubuntu-latest
-    defaults: { run: { working-directory: lorikam } }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: yarn, cache-dependency-path: lorikam/yarn.lock }
-      - run: yarn install --frozen-lockfile
-      - run: yarn build        # medusa build (type-checks + compilează)
-  storefront:
-    runs-on: ubuntu-latest
-    defaults: { run: { working-directory: lorikam-storefront } }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: yarn, cache-dependency-path: lorikam-storefront/yarn.lock }
-      - run: yarn install --frozen-lockfile
-      - run: npx tsc --noEmit   # typecheck (după ce rezolvi erorile preexistente)
-      - run: yarn build
-```
-> Notă: `next build` are nevoie de erorile TS preexistente rezolvate. Până atunci, rulează doar `tsc --noEmit` informativ (fără să blocheze) sau ține pasul de storefront pe `continue-on-error: true`.
+### `.github/workflows/ci.yml` — **implementat** ✅
+Fișierul real e în repo (`.github/workflows/ci.yml`). Două joburi:
+- **backend**: `yarn install --immutable` + `yarn build` (medusa build = typecheck + compilează; nu cere DB).
+- **storefront**: `yarn install --immutable` + `npx tsc --noEmit` (typecheck, acum verde).
+
+Detalii: Yarn 4 prin `corepack enable`; `concurrency` anulează rulările suprascrise.
+
+> **De ce nu `next build` în CI:** storefront-ul prerenderază pagini (categorii, produse) prin `generateStaticParams`, care cer date dintr-un backend Medusa live. Fără backend + date, build-ul pică la fetch. `yarn build` complet pe storefront se rulează în pasul de deploy, contra backendului real.
 
 ### Deploy (cel mai simplu)
 - **Coolify/Dokploy**: conectezi repo-ul GitHub → auto-deploy la push pe `main`. Build via Dockerfile sau buildpack. Zero YAML de deploy.

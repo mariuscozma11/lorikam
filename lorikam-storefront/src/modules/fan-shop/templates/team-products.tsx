@@ -37,7 +37,7 @@ export default async function TeamProducts({
       queryParams: {
         id: teamProductIds,
         limit: 100,
-      },
+      } as any,
       countryCode,
     }),
     listColors(),

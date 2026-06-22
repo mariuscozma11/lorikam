@@ -32,7 +32,7 @@ const Item = ({ item, currencyCode }: ItemProps) => {
         </Text>
         <LineItemOptions variant={item.variant} data-testid="product-variant" />
         {/* Display customizations if present */}
-        {item.metadata?.customizations && (
+        {!!item.metadata?.customizations && (
           <div className="mt-1">
             {Object.entries(item.metadata.customizations as Record<string, string>).map(([key, value]) => (
               <Text

@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (build + typecheck)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lorikam
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Enable Corepack (Yarn 4)
+        run: corepack enable
+      - name: Install
+        run: yarn install --immutable
+      - name: Build (medusa build = typecheck + compile)
+        run: yarn build
+
+  storefront:
+    name: Storefront (typecheck)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lorikam-storefront
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Enable Corepack (Yarn 4)
+        run: corepack enable
+      - name: Install
+        run: yarn install --immutable
+      - name: Typecheck
+        run: npx tsc --noEmit
+      # NOTE: a full `next build` is intentionally NOT run in CI.
+      # The storefront prerenders pages (categories, products) via
+      # generateStaticParams, which fetch data from a live Medusa backend.
+      # Without a running backend + seeded data the build fails on data fetch.
+      # Run `yarn build` against a real backend in the deploy step instead.
