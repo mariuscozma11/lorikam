@@ -1,9 +1,11 @@
 # syntax=docker/dockerfile:1
 # --- Build stage ---
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
-# Native deps for some Medusa packages
-RUN apk add --no-cache python3 make g++ libc6-compat
+# Native deps for some Medusa packages (Debian/glibc — avoids musl hangs)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . .
@@ -13,9 +15,11 @@ RUN corepack enable \
   && yarn build
 
 # --- Run stage ---
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
-RUN apk add --no-cache libc6-compat
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 ENV NODE_ENV=production

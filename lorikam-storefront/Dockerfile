@@ -1,8 +1,7 @@
 # syntax=docker/dockerfile:1
 # --- Build stage ---
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY . .
 
@@ -27,7 +26,7 @@ RUN corepack enable \
   && yarn build
 
 # --- Run stage ---
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production \
