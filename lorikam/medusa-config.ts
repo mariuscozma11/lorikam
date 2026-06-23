@@ -39,6 +39,12 @@ if (isProduction) {
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
+    // Pool must allow >1 connection: migrations hold one connection for the
+    // advisory lock and need another for the migration transaction. A max of
+    // 1 deadlocks (transaction acquire times out after 60s, retries forever).
+    databaseDriverOptions: {
+      pool: { min: 2, max: 10 },
+    },
     redisUrl: process.env.REDIS_URL,
     http: {
       storeCors: process.env.STORE_CORS!,
