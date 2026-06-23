@@ -25,6 +25,22 @@ const notificationProvider = hasResend
       },
     };
 
+// Stripe payment provider: only register when a key is present, otherwise the
+// payment module fails to load ("Required option `apiKey` is missing").
+// Without it, the built-in system (manual) provider still allows test checkout.
+const stripeProviders = process.env.STRIPE_API_KEY
+  ? [
+      {
+        resolve: "@medusajs/medusa/payment-stripe",
+        id: "stripe",
+        options: {
+          apiKey: process.env.STRIPE_API_KEY,
+          webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+        },
+      },
+    ]
+  : [];
+
 if (isProduction) {
   const required = ["JWT_SECRET", "COOKIE_SECRET", "DATABASE_URL", "STORE_CORS", "ADMIN_CORS", "AUTH_CORS"];
   const missing = required.filter((k) => !process.env[k]);
@@ -85,16 +101,7 @@ module.exports = defineConfig({
     {
       resolve: "@medusajs/medusa/payment",
       options: {
-        providers: [
-          {
-            resolve: "@medusajs/medusa/payment-stripe",
-            id: "stripe",
-            options: {
-              apiKey: process.env.STRIPE_API_KEY,
-              webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-            },
-          },
-        ],
+        providers: stripeProviders,
       },
     },
   ],
