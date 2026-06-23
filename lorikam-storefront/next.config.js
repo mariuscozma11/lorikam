@@ -8,6 +8,21 @@ checkEnvVariables()
 const S3_HOSTNAME = process.env.MEDUSA_CLOUD_S3_HOSTNAME
 const S3_PATHNAME = process.env.MEDUSA_CLOUD_S3_PATHNAME
 
+// Allow next/image to load images served by the Medusa backend (uploaded
+// files live at <backend>/static/...). Derived from MEDUSA_BACKEND_URL so it
+// works on any deploy domain without code changes.
+let backendRemotePattern = []
+try {
+  if (process.env.MEDUSA_BACKEND_URL) {
+    const u = new URL(process.env.MEDUSA_BACKEND_URL)
+    backendRemotePattern = [
+      { protocol: u.protocol.replace(":", ""), hostname: u.hostname },
+    ]
+  }
+} catch (e) {
+  // ignore malformed URL
+}
+
 /**
  * @type {import('next').NextConfig}
  */
@@ -27,6 +42,7 @@ const nextConfig = {
   },
   images: {
     remotePatterns: [
+      ...backendRemotePattern,
       {
         protocol: "http",
         hostname: "localhost",
