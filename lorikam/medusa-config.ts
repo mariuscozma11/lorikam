@@ -93,6 +93,26 @@ module.exports = defineConfig({
       resolve: "./src/modules/site-setting",
     },
     {
+      resolve: "@medusajs/medusa/file",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/file-local",
+            id: "local",
+            options: {
+              // Uploaded files are served at <public-backend>/static. Without
+              // a real backend URL the provider emits localhost URLs that break
+              // in production.
+              upload_dir: "static",
+              backend_url: `${
+                process.env.BACKEND_PUBLIC_URL || "http://localhost:9000"
+              }/static`,
+            },
+          },
+        ],
+      },
+    },
+    {
       resolve: "@medusajs/medusa/notification",
       options: {
         providers: [notificationProvider],

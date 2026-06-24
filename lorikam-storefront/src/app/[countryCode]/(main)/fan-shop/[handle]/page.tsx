@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
-import { getTeamByHandle, getTeams } from "@lib/data/teams"
+import { getTeamByHandle } from "@lib/data/teams"
 import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
 import TeamProducts from "@modules/fan-shop/templates/team-products"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -32,12 +32,10 @@ export async function generateMetadata(props: Params): Promise<Metadata> {
   }
 }
 
-export async function generateStaticParams() {
-  const teams = await getTeams()
-  return teams.map((team) => ({
-    handle: team.handle,
-  }))
-}
+// Teams are runtime data (created/edited from admin), so render on demand.
+// A static route + generateStaticParams threw DYNAMIC_SERVER_USAGE (500) for
+// teams created after the build.
+export const dynamic = "force-dynamic"
 
 export default async function TeamPage(props: Params) {
   const params = await props.params
