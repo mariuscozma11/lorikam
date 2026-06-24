@@ -7,9 +7,10 @@ import {
 } from "@medusajs/ui"
 import { Plus, XMark } from "@medusajs/icons"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { sdk } from "../lib/sdk"
 import VariantImageAssigner from "./variant-image-assigner"
+import ImageCropModal from "./image-crop-modal"
 
 type Img = { id?: string; url: string }
 
@@ -17,6 +18,13 @@ type Img = { id?: string; url: string }
 export default function ProductImagesPanel({ productId }: { productId: string }) {
   const queryClient = useQueryClient()
   const [uploading, setUploading] = useState(false)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  // Sequential crop session across a multi-file selection.
+  const sessionRef = useRef<{
+    remaining: File[]
+    cropped: File[]
+    svgs: File[]
+  } | null>(null)
 
   const { data, isLoading } = useQuery<{ product: { images: Img[] } }>({
     queryFn: () =>
@@ -41,12 +49,12 @@ export default function ProductImagesPanel({ productId }: { productId: string })
     onError: (e) => toast.error("Eroare: " + (e as Error).message),
   })
 
-  const handleUpload = async (files: FileList | null) => {
-    if (!files?.length) return
+  const uploadAndSave = async (files: File[]) => {
+    if (!files.length) return
     setUploading(true)
     try {
       const fd = new FormData()
-      Array.from(files).forEach((f) => fd.append("files", f))
+      files.forEach((f) => fd.append("files", f))
       const res = await fetch("/admin/uploads", {
         method: "POST",
         body: fd,
@@ -66,6 +74,57 @@ export default function ProductImagesPanel({ productId }: { productId: string })
     }
   }
 
+  const readToSrc = (file: File) => {
+    const r = new FileReader()
+    r.onload = () => setCropSrc(r.result as string)
+    r.readAsDataURL(file)
+  }
+
+  // Move to the next image to crop, or finish + upload everything.
+  const advance = () => {
+    const s = sessionRef.current
+    if (!s) return
+    if (s.remaining.length) {
+      readToSrc(s.remaining[0])
+    } else {
+      setCropSrc(null)
+      const files = [...s.cropped, ...s.svgs]
+      sessionRef.current = null
+      uploadAndSave(files)
+    }
+  }
+
+  const handleSelect = (fileList: FileList | null) => {
+    if (!fileList?.length) return
+    const all = Array.from(fileList)
+    const svgs = all.filter((f) => f.type === "image/svg+xml")
+    const raster = all.filter((f) => f.type !== "image/svg+xml")
+    sessionRef.current = { remaining: raster, cropped: [], svgs }
+    if (raster.length) {
+      advance()
+    } else {
+      sessionRef.current = null
+      uploadAndSave(svgs)
+    }
+  }
+
+  const handleCropConfirm = (blob: Blob) => {
+    const s = sessionRef.current
+    if (!s) return
+    s.cropped.push(
+      new File([blob], `img-${Date.now()}-${s.cropped.length}.jpg`, {
+        type: "image/jpeg",
+      })
+    )
+    s.remaining = s.remaining.slice(1)
+    advance()
+  }
+
+  const handleCropCancel = () => {
+    sessionRef.current = null
+    setCropSrc(null)
+  }
+
   const removeImage = (url: string) =>
     saveImages.mutate(images.map((i) => i.url).filter((u) => u !== url))
 
@@ -74,7 +133,8 @@ export default function ProductImagesPanel({ productId }: { productId: string })
       <div className="px-6 py-4">
         <Heading level="h2">Imagini</Heading>
         <Text size="small" className="text-ui-fg-muted">
-          Încarcă imagini, apoi asociază-le pe culori mai jos.
+          Încarcă imagini (le poți decupa pătrat la încărcare), apoi asociază-le
+          pe culori mai jos.
         </Text>
       </div>
 
@@ -107,7 +167,10 @@ export default function ProductImagesPanel({ productId }: { productId: string })
                 accept="image/*"
                 multiple
                 className="hidden"
-                onChange={(e) => handleUpload(e.target.files)}
+                onChange={(e) => {
+                  handleSelect(e.target.files)
+                  e.target.value = ""
+                }}
               />
             </label>
           </div>
@@ -115,6 +178,19 @@ export default function ProductImagesPanel({ productId }: { productId: string })
       </div>
 
       <VariantImageAssigner productId={productId} bare />
+
+      {cropSrc && (
+        <ImageCropModal
+          src={cropSrc}
+          aspect={1}
+          outputWidth={1200}
+          outputHeight={1200}
+          mime="image/jpeg"
+          title="Decupează imaginea produsului (pătrat)"
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </Container>
   )
 }

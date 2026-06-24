@@ -4,22 +4,39 @@ import { Photo } from "@medusajs/icons"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { sdk } from "../../lib/sdk"
+import ImageCropModal from "../../components/image-crop-modal"
 
 type Setting = { id: string; key: string; value: string | null }
 
-const SLOTS: { key: string; label: string; hint: string; aspect: string }[] = [
-  { key: "logo", label: "Logo", hint: "PNG transparent, ~446×104", aspect: "446/104" },
-  { key: "hero_image", label: "Hero — pagina principală", hint: "1920×1080 (16:9)", aspect: "16/9" },
-  { key: "lorikam_banner", label: "Banner — Lorikam Shop", hint: "1600×731", aspect: "1600/731" },
-  { key: "fan_shop_banner", label: "Banner — Fan Shop", hint: "1600×731", aspect: "1600/731" },
-  { key: "about_hero", label: "Despre — imagine hero", hint: "1920×1080 (16:9)", aspect: "16/9" },
-  { key: "about_story", label: "Despre — imagine poveste", hint: "4:3", aspect: "4/3" },
-  { key: "og_image", label: "Imagine SEO (share social)", hint: "1200×630", aspect: "1200/630" },
+type Slot = {
+  key: string
+  label: string
+  hint: string
+  aspect: string // CSS aspect-ratio for the preview box
+  crop: {
+    aspect: number
+    outputWidth: number
+    outputHeight: number
+    mime: "image/jpeg" | "image/png"
+  }
+}
+
+const SLOTS: Slot[] = [
+  { key: "logo", label: "Logo", hint: "PNG transparent · 446×104", aspect: "446/104", crop: { aspect: 446 / 104, outputWidth: 892, outputHeight: 208, mime: "image/png" } },
+  { key: "hero_image", label: "Hero — pagina principală", hint: "1920×1080 (16:9)", aspect: "16/9", crop: { aspect: 16 / 9, outputWidth: 1920, outputHeight: 1080, mime: "image/jpeg" } },
+  { key: "lorikam_banner", label: "Banner — Lorikam Shop", hint: "1600×731", aspect: "1600/731", crop: { aspect: 1600 / 731, outputWidth: 1600, outputHeight: 731, mime: "image/jpeg" } },
+  { key: "fan_shop_banner", label: "Banner — Fan Shop", hint: "1600×731", aspect: "1600/731", crop: { aspect: 1600 / 731, outputWidth: 1600, outputHeight: 731, mime: "image/jpeg" } },
+  { key: "about_hero", label: "Despre — imagine hero", hint: "1920×1080 (16:9)", aspect: "16/9", crop: { aspect: 16 / 9, outputWidth: 1920, outputHeight: 1080, mime: "image/jpeg" } },
+  { key: "about_story", label: "Despre — imagine poveste", hint: "4:3 · 1200×900", aspect: "4/3", crop: { aspect: 4 / 3, outputWidth: 1200, outputHeight: 900, mime: "image/jpeg" } },
+  { key: "og_image", label: "Imagine SEO (share social)", hint: "1200×630", aspect: "1200/630", crop: { aspect: 1200 / 630, outputWidth: 1200, outputHeight: 630, mime: "image/jpeg" } },
 ]
 
 const ImaginiSitePage = () => {
   const queryClient = useQueryClient()
   const [uploadingKey, setUploadingKey] = useState<string | null>(null)
+  const [cropState, setCropState] = useState<{ slot: Slot; src: string } | null>(
+    null
+  )
 
   const { data } = useQuery<{ site_settings: Setting[] }>({
     queryFn: () => sdk.client.fetch("/admin/site-settings"),
@@ -38,12 +55,11 @@ const ImaginiSitePage = () => {
     onError: (e) => toast.error("Eroare: " + (e as Error).message),
   })
 
-  const handleUpload = async (key: string, files: FileList | null) => {
-    if (!files?.length) return
+  const uploadFile = async (key: string, file: File) => {
     setUploadingKey(key)
     try {
       const fd = new FormData()
-      fd.append("files", files[0])
+      fd.append("files", file)
       const res = await fetch("/admin/uploads", {
         method: "POST",
         body: fd,
@@ -62,12 +78,37 @@ const ImaginiSitePage = () => {
     }
   }
 
+  // Open the crop editor for the selected file (SVG uploaded as-is).
+  const handleSelect = (slot: Slot, files: FileList | null) => {
+    const file = files?.[0]
+    if (!file) return
+    if (file.type === "image/svg+xml") {
+      uploadFile(slot.key, file)
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => setCropState({ slot, src: reader.result as string })
+    reader.readAsDataURL(file)
+  }
+
+  const handleCropConfirm = (blob: Blob) => {
+    if (!cropState) return
+    const { slot } = cropState
+    const ext = slot.crop.mime === "image/png" ? "png" : "jpg"
+    const file = new File([blob], `${slot.key}-${Date.now()}.${ext}`, {
+      type: slot.crop.mime,
+    })
+    setCropState(null)
+    uploadFile(slot.key, file)
+  }
+
   return (
     <Container className="divide-y p-0">
       <div className="px-6 py-4">
         <Heading level="h1">Imagini site</Heading>
         <Text size="small" className="text-ui-fg-muted mt-1">
-          Încarcă grafica site-ului. Dacă un câmp e gol, se folosește imaginea
+          Încarcă grafica site-ului. La încărcare poți ajusta (crop + zoom) la
+          dimensiunea optimă. Dacă un câmp e gol, se folosește imaginea
           implicită.
         </Text>
       </div>
@@ -134,13 +175,26 @@ const ImaginiSitePage = () => {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => handleUpload(slot.key, e.target.files)}
+                  onChange={(e) => handleSelect(slot, e.target.files)}
                 />
               </label>
             </div>
           )
         })}
       </div>
+
+      {cropState && (
+        <ImageCropModal
+          src={cropState.src}
+          aspect={cropState.slot.crop.aspect}
+          outputWidth={cropState.slot.crop.outputWidth}
+          outputHeight={cropState.slot.crop.outputHeight}
+          mime={cropState.slot.crop.mime}
+          title={`Ajustează: ${cropState.slot.label}`}
+          onCancel={() => setCropState(null)}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </Container>
   )
 }

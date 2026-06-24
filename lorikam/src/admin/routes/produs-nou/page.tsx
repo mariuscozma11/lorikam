@@ -15,7 +15,8 @@ import {
 } from "@medusajs/ui"
 import { TagSolid, Plus, ArrowLeft, Trash, XMark } from "@medusajs/icons"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
+import ImageCropModal from "../../components/image-crop-modal"
 import { useNavigate } from "react-router-dom"
 import MDEditor from "@uiw/react-md-editor"
 import remarkBreaks from "remark-breaks"
@@ -222,6 +223,12 @@ const CreateProduct = ({
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [imageColors, setImageColors] = useState<Record<string, string>>({})
   const [uploading, setUploading] = useState(false)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const cropSession = useRef<{
+    remaining: File[]
+    cropped: File[]
+    svgs: File[]
+  } | null>(null)
 
   const { data: teamData } = useQuery<{ teams: Team[] }>({
     queryFn: () => sdk.client.fetch("/admin/teams", { query: { limit: 100 } }),
@@ -314,12 +321,12 @@ const CreateProduct = ({
     ])
   }
 
-  const handleUpload = async (files: FileList | null) => {
-    if (!files?.length) return
+  const uploadAndAppend = async (files: File[]) => {
+    if (!files.length) return
     setUploading(true)
     try {
       const fd = new FormData()
-      Array.from(files).forEach((f) => fd.append("files", f))
+      files.forEach((f) => fd.append("files", f))
       const response = await fetch("/admin/uploads", {
         method: "POST",
         body: fd,
@@ -336,6 +343,47 @@ const CreateProduct = ({
     } finally {
       setUploading(false)
     }
+  }
+
+  // Crop each selected image (square) before uploading; SVGs go as-is.
+  const advanceCrop = () => {
+    const s = cropSession.current
+    if (!s) return
+    if (s.remaining.length) {
+      const r = new FileReader()
+      r.onload = () => setCropSrc(r.result as string)
+      r.readAsDataURL(s.remaining[0])
+    } else {
+      setCropSrc(null)
+      const files = [...s.cropped, ...s.svgs]
+      cropSession.current = null
+      uploadAndAppend(files)
+    }
+  }
+
+  const handleUpload = (files: FileList | null) => {
+    if (!files?.length) return
+    const all = Array.from(files)
+    const svgs = all.filter((f) => f.type === "image/svg+xml")
+    const raster = all.filter((f) => f.type !== "image/svg+xml")
+    cropSession.current = { remaining: raster, cropped: [], svgs }
+    if (raster.length) advanceCrop()
+    else {
+      cropSession.current = null
+      uploadAndAppend(svgs)
+    }
+  }
+
+  const handleCropConfirm = (blob: Blob) => {
+    const s = cropSession.current
+    if (!s) return
+    s.cropped.push(
+      new File([blob], `img-${Date.now()}-${s.cropped.length}.jpg`, {
+        type: "image/jpeg",
+      })
+    )
+    s.remaining = s.remaining.slice(1)
+    advanceCrop()
   }
   const removeImage = (url: string) => {
     setImageUrls((prev) => prev.filter((u) => u !== url))
@@ -690,11 +738,30 @@ const CreateProduct = ({
                 accept="image/*"
                 multiple
                 className="hidden"
-                onChange={(e) => handleUpload(e.target.files)}
+                onChange={(e) => {
+                  handleUpload(e.target.files)
+                  e.target.value = ""
+                }}
               />
             </label>
           </div>
         </div>
+
+        {cropSrc && (
+          <ImageCropModal
+            src={cropSrc}
+            aspect={1}
+            outputWidth={1200}
+            outputHeight={1200}
+            mime="image/jpeg"
+            title="Decupează imaginea produsului (pătrat)"
+            onCancel={() => {
+              cropSession.current = null
+              setCropSrc(null)
+            }}
+            onConfirm={handleCropConfirm}
+          />
+        )}
 
         {/* Personalizare */}
         <div className="space-y-3">
