@@ -72,6 +72,15 @@ const SideMenu = ({ teams = [] }: SideMenuProps) => {
                       Acasă
                     </LocalizedClientLink>
 
+                    {/* Magazin */}
+                    <LocalizedClientLink
+                      href="/store"
+                      className="flex items-center h-12 px-5 text-base hover:bg-ui-bg-subtle transition-colors"
+                      onClick={close}
+                    >
+                      Magazin
+                    </LocalizedClientLink>
+
                     {/* Lorikam Shop */}
                     <LocalizedClientLink
                       href="/lorikam"
@@ -132,6 +141,24 @@ const SideMenu = ({ teams = [] }: SideMenuProps) => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Despre */}
+                    <LocalizedClientLink
+                      href="/about"
+                      className="flex items-center h-12 px-5 text-base hover:bg-ui-bg-subtle transition-colors"
+                      onClick={close}
+                    >
+                      Despre
+                    </LocalizedClientLink>
+
+                    {/* Contact */}
+                    <LocalizedClientLink
+                      href="/contact"
+                      className="flex items-center h-12 px-5 text-base hover:bg-ui-bg-subtle transition-colors"
+                      onClick={close}
+                    >
+                      Contact
+                    </LocalizedClientLink>
 
                     {/* Divider */}
                     <div className="my-3 mx-5 border-t border-ui-border-base" />

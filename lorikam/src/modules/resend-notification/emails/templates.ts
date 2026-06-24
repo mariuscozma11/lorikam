@@ -130,14 +130,35 @@ function genericFallback(data: any): EmailContent {
   }
 }
 
+function contactMessage(data: any): EmailContent {
+  const c = data?.contact ?? data ?? {}
+  const body = `
+    <h1 style="margin:0 0 16px;font-size:20px;">Mesaj nou de contact</h1>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;">
+      <tr><td style="padding:4px 0;color:#71717a;width:90px;">Nume</td><td style="padding:4px 0;font-weight:600;">${c.name || ""}</td></tr>
+      <tr><td style="padding:4px 0;color:#71717a;">Email</td><td style="padding:4px 0;"><a href="mailto:${c.email || ""}">${c.email || ""}</a></td></tr>
+      ${c.phone ? `<tr><td style="padding:4px 0;color:#71717a;">Telefon</td><td style="padding:4px 0;">${c.phone}</td></tr>` : ""}
+    </table>
+    <p style="margin:20px 0 6px;font-weight:600;">Mesaj</p>
+    <p style="margin:0;color:#52525b;font-size:15px;line-height:1.6;white-space:pre-wrap;">${(c.message || "").replace(/</g, "&lt;")}</p>
+  `
+  return {
+    subject: `Mesaj contact de la ${c.name || "vizitator"}`,
+    html: layout("Mesaj de contact", body),
+  }
+}
+
 export const TEMPLATES = {
   ORDER_PLACED: "order-placed",
+  CONTACT: "contact-message",
 } as const
 
 export function renderEmail(template: string, data: any): EmailContent {
   switch (template) {
     case TEMPLATES.ORDER_PLACED:
       return orderPlaced(data)
+    case TEMPLATES.CONTACT:
+      return contactMessage(data)
     default:
       return genericFallback(data)
   }

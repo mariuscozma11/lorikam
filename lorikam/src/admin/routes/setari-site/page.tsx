@@ -36,6 +36,12 @@ const GROUPS: Group[] = [
       { key: "company_address", label: "Adresă sediu", type: "textarea", placeholder: "Str. ..., Oraș, Județ" },
       { key: "company_email", label: "Email contact", placeholder: "contact@lorikam.ro" },
       { key: "company_phone", label: "Telefon", placeholder: "+40 7xx xxx xxx" },
+      {
+        key: "contact_intro",
+        label: "Text intro pagina Contact",
+        type: "textarea",
+        placeholder: "Ai o întrebare? Scrie-ne și revenim cât mai repede.",
+      },
     ],
   },
   {

@@ -13,6 +13,15 @@ type ShopMenuProps = {
 export default function ShopMenu({ teams }: ShopMenuProps) {
   return (
     <div className="flex items-center gap-x-6 h-full">
+      {/* Magazin (toate produsele) */}
+      <LocalizedClientLink
+        href="/store"
+        className="hover:text-ui-fg-base transition-colors"
+        data-testid="store-link"
+      >
+        Magazin
+      </LocalizedClientLink>
+
       {/* Lorikam Shop Link */}
       <LocalizedClientLink
         href="/lorikam"
@@ -97,6 +106,24 @@ export default function ShopMenu({ teams }: ShopMenuProps) {
           </>
         )}
       </Popover>
+
+      {/* Despre */}
+      <LocalizedClientLink
+        href="/about"
+        className="hover:text-ui-fg-base transition-colors"
+        data-testid="about-link"
+      >
+        Despre
+      </LocalizedClientLink>
+
+      {/* Contact */}
+      <LocalizedClientLink
+        href="/contact"
+        className="hover:text-ui-fg-base transition-colors"
+        data-testid="contact-link"
+      >
+        Contact
+      </LocalizedClientLink>
     </div>
   )
 }

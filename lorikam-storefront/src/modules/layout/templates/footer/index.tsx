@@ -104,6 +104,22 @@ export default async function Footer() {
                   Toate produsele
                 </LocalizedClientLink>
               </li>
+              <li>
+                <LocalizedClientLink
+                  href="/about"
+                  className="hover:text-ui-fg-base"
+                >
+                  Despre noi
+                </LocalizedClientLink>
+              </li>
+              <li>
+                <LocalizedClientLink
+                  href="/contact"
+                  className="hover:text-ui-fg-base"
+                >
+                  Contact
+                </LocalizedClientLink>
+              </li>
             </ul>
           </div>
 
