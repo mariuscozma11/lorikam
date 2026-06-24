@@ -153,25 +153,25 @@ export default async function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-ui-fg-base">
+      <section className="bg-neutral-900">
         <div className="content-container py-16 flex flex-col items-center text-center gap-6">
-          <h2 className="text-3xl small:text-4xl font-semibold text-ui-bg-base max-w-2xl">
+          <h2 className="text-3xl small:text-4xl font-semibold text-white max-w-2xl">
             Descoperă echipamentele Lorikam
           </h2>
-          <p className="text-ui-bg-base/70 max-w-xl">
+          <p className="text-white/70 max-w-xl">
             Articole sportive de calitate și echipamentele oficiale ale echipelor
             partenere, într-un singur loc.
           </p>
           <div className="flex flex-col xsmall:flex-row gap-4">
             <LocalizedClientLink
               href="/lorikam"
-              className="px-8 py-3 rounded-full bg-ui-bg-base text-ui-fg-base font-medium hover:opacity-90 transition-opacity"
+              className="px-8 py-3 rounded-full bg-white text-neutral-900 font-medium hover:opacity-90 transition-opacity"
             >
               Lorikam Shop
             </LocalizedClientLink>
             <LocalizedClientLink
               href="/fan-shop"
-              className="px-8 py-3 rounded-full border border-ui-bg-base/40 text-ui-bg-base font-medium hover:bg-ui-bg-base/10 transition-colors"
+              className="px-8 py-3 rounded-full border border-white/40 text-white font-medium hover:bg-white/10 transition-colors"
             >
               Fan Shop
             </LocalizedClientLink>
