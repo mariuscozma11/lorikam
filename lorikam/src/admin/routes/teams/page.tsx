@@ -16,6 +16,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState, useRef } from "react"
 import { sdk } from "../../lib/sdk"
+import ImageCropModal from "../../components/image-crop-modal"
 import { Buildings, Plus, ArrowUpTray, XMark } from "@medusajs/icons"
 
 type Team = {
@@ -41,12 +42,21 @@ type ImageUploadProps = {
   value: string
   onChange: (url: string) => void
   previewSize?: "small" | "large"
+  hint?: string
+  // When set, opens a crop editor (target aspect + exact output size).
+  crop?: {
+    aspect: number
+    outputWidth: number
+    outputHeight: number
+    mime?: "image/jpeg" | "image/png"
+  }
 }
 
-const ImageUpload = ({ label, value, onChange, previewSize = "small" }: ImageUploadProps) => {
+const ImageUpload = ({ label, value, onChange, previewSize = "small", hint, crop }: ImageUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
 
   const uploadFile = async (file: File) => {
     // Validate file type
@@ -93,10 +103,40 @@ const ImageUpload = ({ label, value, onChange, previewSize = "small" }: ImageUpl
     }
   }
 
+  // Validate, then either open the crop editor or upload directly.
+  const prepareFile = async (file: File) => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Tip de fisier invalid. Sunt acceptate doar imagini (JPEG, PNG, GIF, WebP, SVG)")
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Fisierul este prea mare. Dimensiunea maxima este 5MB")
+      return
+    }
+    // SVG can't be cropped on canvas — upload as-is.
+    if (crop && file.type !== "image/svg+xml") {
+      const reader = new FileReader()
+      reader.onload = () => setCropSrc(reader.result as string)
+      reader.readAsDataURL(file)
+    } else {
+      await uploadFile(file)
+    }
+  }
+
+  const handleCropConfirm = async (blob: Blob) => {
+    const ext = crop?.mime === "image/png" ? "png" : "jpg"
+    const cropped = new File([blob], `crop-${Date.now()}.${ext}`, {
+      type: crop?.mime || "image/jpeg",
+    })
+    setCropSrc(null)
+    await uploadFile(cropped)
+  }
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      await uploadFile(file)
+      await prepareFile(file)
     }
   }
 
@@ -105,7 +145,7 @@ const ImageUpload = ({ label, value, onChange, previewSize = "small" }: ImageUpl
     setIsDragging(false)
     const file = e.dataTransfer.files?.[0]
     if (file) {
-      await uploadFile(file)
+      await prepareFile(file)
     }
   }
 
@@ -128,6 +168,11 @@ const ImageUpload = ({ label, value, onChange, previewSize = "small" }: ImageUpl
   return (
     <div>
       <Label className="font-medium">{label}</Label>
+      {hint && (
+        <Text size="xsmall" className="text-ui-fg-muted mt-0.5">
+          {hint}
+        </Text>
+      )}
       <div className="mt-2">
         {value ? (
           <div className={`relative ${previewSize === "large" ? "inline-block w-full" : "inline-block"}`}>
@@ -188,6 +233,22 @@ const ImageUpload = ({ label, value, onChange, previewSize = "small" }: ImageUpl
           className="hidden"
         />
       </div>
+
+      {cropSrc && crop && (
+        <ImageCropModal
+          src={cropSrc}
+          aspect={crop.aspect}
+          outputWidth={crop.outputWidth}
+          outputHeight={crop.outputHeight}
+          mime={crop.mime}
+          title={`Ajustează: ${label}`}
+          onCancel={() => {
+            setCropSrc(null)
+            if (fileInputRef.current) fileInputRef.current.value = ""
+          }}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   )
 }
@@ -500,6 +561,8 @@ const TeamsPage = () => {
               value={logo}
               onChange={setLogo}
               previewSize="small"
+              hint="PNG transparent, pătrat (ex. 400×400px)"
+              crop={{ aspect: 1, outputWidth: 400, outputHeight: 400, mime: "image/png" }}
             />
 
             <div className="grid grid-cols-2 gap-4">
@@ -560,6 +623,8 @@ const TeamsPage = () => {
               value={bannerImage}
               onChange={setBannerImage}
               previewSize="large"
+              hint="1600×731px · ratio ~2.2:1 (landscape lat) · JPG/PNG, până la 5MB"
+              crop={{ aspect: 1600 / 731, outputWidth: 1600, outputHeight: 731, mime: "image/jpeg" }}
             />
 
             <div className="flex items-center justify-between">

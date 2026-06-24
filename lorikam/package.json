@@ -27,6 +27,7 @@
     "@medusajs/framework": "2.16.0",
     "@medusajs/medusa": "2.16.0",
     "@uiw/react-md-editor": "^4.0.11",
+    "react-easy-crop": "^6.0.2",
     "remark-breaks": "^4.0.0",
     "resend": "^6.14.0"
   },

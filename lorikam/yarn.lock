@@ -13815,6 +13815,7 @@ __metadata:
     prop-types: "npm:^15.8.1"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
+    react-easy-crop: "npm:^6.0.2"
     remark-breaks: "npm:^4.0.0"
     resend: "npm:^6.14.0"
     ts-node: "npm:^10.9.2"
@@ -15082,6 +15083,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"normalize-wheel@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "normalize-wheel@npm:1.0.1"
+  checksum: 10c0/5daf4c97e39f36658a5263a6499bbc148676ae2bd85f12c8d03c46ffe7bc3c68d44564c00413d88d0457ac0d94450559bb1c24c2ce7ae0c107031f82d093ac06
+  languageName: node
+  linkType: hard
+
 "npm-bundled@npm:^1.1.1":
   version: 1.1.2
   resolution: "npm-bundled@npm:1.1.2"
@@ -16158,6 +16166,18 @@ __metadata:
   peerDependencies:
     react: ^18.3.1
   checksum: 10c0/a752496c1941f958f2e8ac56239172296fcddce1365ce45222d04a1947e0cc5547df3e8447f855a81d6d39f008d7c32eab43db3712077f09e3f67c4874973e85
+  languageName: node
+  linkType: hard
+
+"react-easy-crop@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "react-easy-crop@npm:6.0.2"
+  dependencies:
+    normalize-wheel: "npm:^1.0.1"
+  peerDependencies:
+    react: ">=16.4.0"
+    react-dom: ">=16.4.0"
+  checksum: 10c0/45d25be073409185a84089a3e2a58f8fb36c3bb3c8153a900c8423e9812da1dbb35fc295c3be2c4e6ca6a2a6386dff7be669b66307d4f0e0ee27ede9b29e79c3
   languageName: node
   linkType: hard
 
