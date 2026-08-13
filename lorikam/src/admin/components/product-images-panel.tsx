@@ -111,9 +111,12 @@ export default function ProductImagesPanel({ productId }: { productId: string })
   const handleCropConfirm = (blob: Blob) => {
     const s = sessionRef.current
     if (!s) return
+    // The crop modal returns PNG when a transparent background was chosen, so
+    // take the type from the blob instead of assuming JPEG.
+    const ext = blob.type === "image/png" ? "png" : "jpg"
     s.cropped.push(
-      new File([blob], `img-${Date.now()}-${s.cropped.length}.jpg`, {
-        type: "image/jpeg",
+      new File([blob], `img-${Date.now()}-${s.cropped.length}.${ext}`, {
+        type: blob.type || "image/jpeg",
       })
     )
     s.remaining = s.remaining.slice(1)

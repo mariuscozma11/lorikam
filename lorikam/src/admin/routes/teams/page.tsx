@@ -125,9 +125,9 @@ const ImageUpload = ({ label, value, onChange, previewSize = "small", hint, crop
   }
 
   const handleCropConfirm = async (blob: Blob) => {
-    const ext = crop?.mime === "image/png" ? "png" : "jpg"
+    const ext = blob.type === "image/png" ? "png" : "jpg"
     const cropped = new File([blob], `crop-${Date.now()}.${ext}`, {
-      type: crop?.mime || "image/jpeg",
+      type: blob.type || crop?.mime || "image/jpeg",
     })
     setCropSrc(null)
     await uploadFile(cropped)

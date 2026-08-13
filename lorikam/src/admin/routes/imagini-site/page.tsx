@@ -94,9 +94,9 @@ const ImaginiSitePage = () => {
   const handleCropConfirm = (blob: Blob) => {
     if (!cropState) return
     const { slot } = cropState
-    const ext = slot.crop.mime === "image/png" ? "png" : "jpg"
+    const ext = blob.type === "image/png" ? "png" : "jpg"
     const file = new File([blob], `${slot.key}-${Date.now()}.${ext}`, {
-      type: slot.crop.mime,
+      type: blob.type || slot.crop.mime,
     })
     setCropState(null)
     uploadFile(slot.key, file)
