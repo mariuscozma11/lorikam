@@ -121,6 +121,6 @@ Testează pe `/ro`. Marchează ✅/❌.
 ### Verificări finale pre-lansare
 - [ ] Email confirmare comandă ajunge.
 - [ ] Webhook Stripe confirmă plata (status comandă).
-- [ ] TVA 19% RO aplicat corect.
+- [x] TVA 21% RO aplicat corect — `setup-tax.ts` creează regiunea fiscală RO + cota implicită de 21% și marchează prețurile ca **cu TVA inclus** (120 RON rămâne 120 RON, din care 20,83 TVA). Înainte nu exista nicio cotă fiscală, deci toate comenzile aveau `tax_total = 0`.
 - [ ] Domeniu + SSL pe ambele aplicații.
 - [ ] Parola de protecție storefront scoasă (dacă a fost).

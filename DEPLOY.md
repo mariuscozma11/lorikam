@@ -52,14 +52,21 @@ RESEND_FROM=Lorikam <comenzi@lorikam.ro>
 ```bash
 # seed presetări croi/mărimi
 npx medusa exec ./src/scripts/seed-variant-presets.ts
+# zone livrare RO+EU, metode (Ridicare personală, Cargus), profil livrare pe produse
+npx medusa exec ./src/scripts/setup-shipping.ts
+# TVA 21% RO + prețuri cu TVA inclus
+npx medusa exec ./src/scripts/setup-tax.ts
 # user admin
 npx medusa user -e admin@lorikam.ro -p <parolă-puternică>
 ```
+Toate trei scripturile sunt idempotente — pot fi rulate din nou fără efecte secundare.
+
 Apoi intră în **admin** `https://api.lorikam.ro/app` și configurează:
-- Regiune **Romania** (+ Europe), monedă **RON**, tax 19%.
+- Regiune **Romania** (+ Europe), monedă **RON**. TVA 21% e setat de `setup-tax.ts`.
 - **Sales channel** + **Stock location**.
 - **Publishable key** (Settings → API keys) → o folosești la storefront (pasul 3).
-- Webhook Stripe → `https://api.lorikam.ro/hooks/payment/stripe` (copiază secretul în `STRIPE_WEBHOOK_SECRET`).
+- Webhook Stripe → `https://api.lorikam.ro/hooks/payment/stripe_stripe` (copiază secretul în `STRIPE_WEBHOOK_SECRET`).
+  Ruta e `/hooks/payment/{provider_id}_{id}`; cu `/hooks/payment/stripe` Medusa caută `pp_stripe`, întoarce 200, dar în log apare `Could not resolve 'pp_stripe'` și plata nu se capturează.
 
 ---
 
