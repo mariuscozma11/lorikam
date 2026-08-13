@@ -15,13 +15,42 @@ const TEMPLATE_META = [
   {
     id: "order-placed",
     name: "Confirmare comandă",
-    description: "Trimis clientului imediat după plasarea comenzii.",
-    variables: ["display_id", "customer_name"],
+    description:
+      "Către client, imediat după plasarea comenzii (eveniment order.placed).",
+    variables: ["display_id", "customer_name", "contact_email"],
+  },
+  {
+    id: "order-shipped",
+    name: "Comandă expediată",
+    description:
+      "Către client când marchezi comanda ca expediată în admin (Create shipment). Include AWB-ul dacă l-ai completat.",
+    variables: ["display_id", "customer_name", "contact_email"],
+  },
+  {
+    id: "order-delivered",
+    name: "Comandă livrată",
+    description:
+      "Către client când apeși „Mark as delivered” pe livrare în admin.",
+    variables: ["display_id", "customer_name", "contact_email"],
+  },
+  {
+    id: "order-canceled",
+    name: "Comandă anulată",
+    description: "Către client când anulezi comanda din admin.",
+    variables: ["display_id", "customer_name", "contact_email"],
+  },
+  {
+    id: "customer-welcome",
+    name: "Cont nou (bun venit)",
+    description:
+      "Către client la crearea unui cont. Nu se trimite pentru comenzile ca vizitator.",
+    variables: ["customer_name", "email", "contact_email"],
   },
   {
     id: "contact-message",
-    name: "Mesaj de contact",
-    description: "Trimis către adresa firmei când cineva scrie din formular.",
+    name: "Mesaj de contact (intern)",
+    description:
+      "Către adresa firmei (Setări site → Email contact) când cineva scrie din formularul de contact.",
     variables: ["name", "email"],
   },
 ] as const

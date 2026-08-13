@@ -29,10 +29,14 @@ const sendContactStep = createStep(
     const to = settings?.[0]?.value || process.env.CONTACT_TO
 
     if (!to) {
-      logger.warn(
-        "Contact form: no recipient (set company_email in Setări site or CONTACT_TO env)."
+      // Failing silently here meant the storefront told the visitor "message
+      // sent" while nobody ever received it.
+      logger.error(
+        "Contact form: no recipient configured (set Email contact in Setări site, or CONTACT_TO env)."
       )
-      return new StepResponse({ sent: false })
+      throw new Error(
+        "Formularul de contact nu este configurat. Te rugăm să ne scrii direct pe email."
+      )
     }
 
     await notification.createNotifications({

@@ -6,10 +6,45 @@ type OrderDetailsProps = {
   showStatus?: boolean
 }
 
-const OrderDetails = ({ order, showStatus }: OrderDetailsProps) => {
-  const formatStatus = (str: string) => {
-    const formatted = str.split("_").join(" ")
+// Medusa reports these in English; the storefront is Romanian.
+const FULFILLMENT_STATUS: Record<string, string> = {
+  not_fulfilled: "În procesare",
+  partially_fulfilled: "Parțial pregătită",
+  fulfilled: "Pregătită de expediere",
+  partially_shipped: "Parțial expediată",
+  shipped: "Expediată",
+  partially_delivered: "Parțial livrată",
+  delivered: "Livrată",
+  partially_returned: "Parțial returnată",
+  returned: "Returnată",
+  canceled: "Anulată",
+}
 
+const PAYMENT_STATUS: Record<string, string> = {
+  not_paid: "Neplătită",
+  awaiting: "În așteptare",
+  authorized: "Autorizată",
+  partially_authorized: "Parțial autorizată",
+  captured: "Plătită",
+  partially_captured: "Parțial plătită",
+  partially_refunded: "Parțial rambursată",
+  refunded: "Rambursată",
+  canceled: "Anulată",
+  requires_action: "Necesită acțiune",
+}
+
+const OrderDetails = ({ order, showStatus }: OrderDetailsProps) => {
+  const formatStatus = (str: string, map: Record<string, string>) => {
+    if (!str) {
+      return "—"
+    }
+
+    const translated = map[str]
+    if (translated) {
+      return translated
+    }
+
+    const formatted = str.split("_").join(" ")
     return formatted.slice(0, 1).toUpperCase() + formatted.slice(1)
   }
 
@@ -41,16 +76,16 @@ const OrderDetails = ({ order, showStatus }: OrderDetailsProps) => {
             <Text>
               Stare comandă:{" "}
               <span className="text-ui-fg-subtle " data-testid="order-status">
-                {formatStatus(order.fulfillment_status)}
+                {formatStatus(order.fulfillment_status, FULFILLMENT_STATUS)}
               </span>
             </Text>
             <Text>
               Stare plată:{" "}
               <span
                 className="text-ui-fg-subtle "
-                sata-testid="order-payment-status"
+                data-testid="order-payment-status"
               >
-                {formatStatus(order.payment_status)}
+                {formatStatus(order.payment_status, PAYMENT_STATUS)}
               </span>
             </Text>
           </>

@@ -136,20 +136,31 @@ const EmailTemplatesPage = () => {
           )}
         </div>
 
-        <div className="flex gap-2 px-6 py-3">
-          {templates.map((t) => (
-            <Button
-              key={t.id}
-              variant={active?.id === t.id ? "primary" : "secondary"}
-              size="small"
-              onClick={() => {
-                setActiveId(t.id)
-                setPreviewHtml("")
-              }}
-            >
-              {t.name}
-            </Button>
-          ))}
+        <div className="flex flex-wrap gap-x-1 px-6 pt-2 border-b border-ui-border-base">
+          {templates.map((t) => {
+            const isActive = active?.id === t.id
+            const edited = t.fields.some((f) => (values[f.key] ?? "") !== "")
+
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  setActiveId(t.id)
+                  setPreviewHtml("")
+                }}
+                className={
+                  "px-3 py-2 -mb-px text-sm border-b-2 transition-colors " +
+                  (isActive
+                    ? "border-ui-fg-base text-ui-fg-base font-medium"
+                    : "border-transparent text-ui-fg-muted hover:text-ui-fg-base")
+                }
+              >
+                {t.name}
+                {edited && <span className="ml-1 text-ui-fg-interactive">•</span>}
+              </button>
+            )
+          })}
         </div>
 
         {active && (

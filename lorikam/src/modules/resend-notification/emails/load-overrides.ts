@@ -12,7 +12,11 @@ export async function loadEmailOverrides(
 
     return Object.fromEntries(
       settings
-        .filter((s: any) => s.key?.startsWith("email_"))
+        // company_email rides along so templates can point people at a real
+        // inbox — the Resend sender doesn't receive mail.
+        .filter(
+          (s: any) => s.key?.startsWith("email_") || s.key === "company_email"
+        )
         .map((s: any) => [s.key, s.value])
     )
   } catch {

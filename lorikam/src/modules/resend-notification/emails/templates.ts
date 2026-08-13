@@ -8,7 +8,12 @@ function formatPrice(amount: number, currency: string): string {
   return `${value.toFixed(2)} ${(currency || "RON").toUpperCase()}`
 }
 
-function layout(title: string, body: string): string {
+// Outgoing mail is send-only (no inbox behind the Resend sender), so every
+// email has to point people somewhere they'll actually be read.
+export const DEFAULT_CONTACT_EMAIL = "contact@lorikam.com"
+
+function layout(title: string, body: string, contactEmail?: string): string {
+  const contact = contactEmail || DEFAULT_CONTACT_EMAIL
   return `<!DOCTYPE html>
 <html lang="ro">
   <head>
@@ -33,6 +38,10 @@ function layout(title: string, body: string): string {
             </tr>
             <tr>
               <td style="padding:24px 32px;background:#fafafa;border-top:1px solid #e4e4e7;color:#71717a;font-size:12px;">
+                Acesta este un email automat — te rugăm să nu răspunzi.
+                Pentru orice întrebare scrie-ne la
+                <a href="mailto:${contact}" style="color:#71717a;">${contact}</a>.
+                <br/><br/>
                 © ${new Date().getFullYear()} ${BRAND}. Toate drepturile rezervate.
               </td>
             </tr>
@@ -55,6 +64,34 @@ export const EDITABLE_FIELDS = {
     heading: "Mulțumim pentru comandă, {{customer_name}}!",
     intro:
       "Am primit comanda ta <strong>#{{display_id}}</strong> și o pregătim. Îți trimitem un email când este expediată.",
+    outro: "",
+  },
+  "order-shipped": {
+    subject: "Comanda #{{display_id}} a fost expediată — Lorikam",
+    heading: "Comanda ta e pe drum, {{customer_name}}!",
+    intro:
+      "Am predat comanda <strong>#{{display_id}}</strong> curierului. Vei primi coletul în 1-3 zile lucrătoare.",
+    outro: "",
+  },
+  "order-delivered": {
+    subject: "Comanda #{{display_id}} a fost livrată — Lorikam",
+    heading: "Comanda ta a ajuns, {{customer_name}}!",
+    intro:
+      "Comanda <strong>#{{display_id}}</strong> a fost livrată. Sperăm să îți placă!",
+    outro: "Dacă e ceva în neregulă, scrie-ne la {{contact_email}} în 14 zile.",
+  },
+  "order-canceled": {
+    subject: "Comanda #{{display_id}} a fost anulată — Lorikam",
+    heading: "Comanda #{{display_id}} a fost anulată",
+    intro:
+      "Comanda ta a fost anulată. Dacă ai plătit online, banii se întorc pe același card în 5-10 zile lucrătoare.",
+    outro: "Dacă nu tu ai cerut anularea, scrie-ne la {{contact_email}}.",
+  },
+  "customer-welcome": {
+    subject: "Bine ai venit la Lorikam!",
+    heading: "Bine ai venit, {{customer_name}}!",
+    intro:
+      "Contul tău a fost creat. De acum poți urmări comenzile și salva adresele de livrare.",
     outro: "",
   },
   "contact-message": {
@@ -81,6 +118,11 @@ function applyVars(text: string, vars: Record<string, string | number>) {
 // Falls back to the built-in copy when the client hasn't overridden it. An
 // override saved as an empty string is treated as "use the default" for
 // subject/heading, but as a real empty for the optional outro block.
+function contactAddress(overrides: EmailOverrides | undefined) {
+  const configured = (overrides?.["company_email"] || "").trim()
+  return configured || DEFAULT_CONTACT_EMAIL
+}
+
 function copy(
   template: keyof typeof EDITABLE_FIELDS,
   field: "subject" | "heading" | "intro" | "outro",
@@ -135,7 +177,12 @@ function orderPlaced(data: any): EmailContent {
     : ""
 
   const overrides: EmailOverrides | undefined = data?.overrides
-  const vars = { display_id: displayId, customer_name: customerName }
+  const contactEmail = contactAddress(overrides)
+  const vars = {
+    display_id: displayId,
+    customer_name: customerName,
+    contact_email: contactEmail,
+  }
 
   const body = `
     <h1 style="margin:0 0 8px;font-size:22px;">${copy("order-placed", "heading", overrides, vars)}</h1>
@@ -178,7 +225,7 @@ function orderPlaced(data: any): EmailContent {
 
   return {
     subject: copy("order-placed", "subject", overrides, vars),
-    html: layout(`Confirmare comandă #${displayId}`, body),
+    html: layout(`Confirmare comandă #${displayId}`, body, contactEmail),
   }
 }
 
@@ -210,8 +257,106 @@ function contactMessage(data: any): EmailContent {
   }
 }
 
+// Status emails share one shape: a headline, a paragraph, and a short recap
+// of the order. Only the copy differs, and that copy is client-editable.
+function orderStatusEmail(
+  template: "order-shipped" | "order-delivered" | "order-canceled",
+  data: any
+): EmailContent {
+  const order = data?.order ?? data ?? {}
+  const overrides: EmailOverrides | undefined = data?.overrides
+  const displayId = order.display_id ?? order.id ?? ""
+  const customerName =
+    order.shipping_address?.first_name || order.customer?.first_name || "client"
+  const contactEmail = contactAddress(overrides)
+  const vars = {
+    display_id: displayId,
+    customer_name: customerName,
+    contact_email: contactEmail,
+  }
+
+  const items: any[] = Array.isArray(order.items) ? order.items : []
+  const itemLines = items
+    .map((item) => {
+      const title = item.product_title || item.title || "Produs"
+      const variant = item.variant_title || item.subtitle || ""
+      const qty = item.quantity ?? 1
+      return `<tr>
+        <td style="padding:6px 0;border-bottom:1px solid #f0f0f0;">
+          <div style="font-weight:600;">${title}</div>
+          ${variant ? `<div style="color:#71717a;font-size:13px;">${variant}</div>` : ""}
+        </td>
+        <td style="padding:6px 0;border-bottom:1px solid #f0f0f0;text-align:right;color:#52525b;">×${qty}</td>
+      </tr>`
+    })
+    .join("")
+
+  const tracking: string[] = Array.isArray(data?.tracking_numbers)
+    ? data.tracking_numbers.filter(Boolean)
+    : []
+
+  const body = `
+    <h1 style="margin:0 0 8px;font-size:22px;">${copy(template, "heading", overrides, vars)}</h1>
+    <p style="margin:0 0 24px;color:#52525b;font-size:15px;">
+      ${copy(template, "intro", overrides, vars)}
+    </p>
+    ${
+      tracking.length
+        ? `<p style="margin:0 0 24px;font-size:15px;">Număr AWB: <strong>${tracking.join(", ")}</strong></p>`
+        : ""
+    }
+    ${
+      itemLines
+        ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">${itemLines}</table>`
+        : ""
+    }
+    ${
+      copy(template, "outro", overrides, vars)
+        ? `<p style="margin:24px 0 0;color:#52525b;font-size:15px;line-height:1.6;">${copy(template, "outro", overrides, vars)}</p>`
+        : ""
+    }
+  `
+
+  return {
+    subject: copy(template, "subject", overrides, vars),
+    html: layout(`Comanda #${displayId}`, body, contactEmail),
+  }
+}
+
+function customerWelcome(data: any): EmailContent {
+  const customer = data?.customer ?? data ?? {}
+  const overrides: EmailOverrides | undefined = data?.overrides
+  const contactEmail = contactAddress(overrides)
+  const vars = {
+    customer_name: customer.first_name || "prieten",
+    email: customer.email || "",
+    contact_email: contactEmail,
+  }
+
+  const body = `
+    <h1 style="margin:0 0 8px;font-size:22px;">${copy("customer-welcome", "heading", overrides, vars)}</h1>
+    <p style="margin:0 0 24px;color:#52525b;font-size:15px;">
+      ${copy("customer-welcome", "intro", overrides, vars)}
+    </p>
+    ${
+      copy("customer-welcome", "outro", overrides, vars)
+        ? `<p style="margin:0;color:#52525b;font-size:15px;line-height:1.6;">${copy("customer-welcome", "outro", overrides, vars)}</p>`
+        : ""
+    }
+  `
+
+  return {
+    subject: copy("customer-welcome", "subject", overrides, vars),
+    html: layout("Bine ai venit", body, contactEmail),
+  }
+}
+
 export const TEMPLATES = {
   ORDER_PLACED: "order-placed",
+  ORDER_SHIPPED: "order-shipped",
+  ORDER_DELIVERED: "order-delivered",
+  ORDER_CANCELED: "order-canceled",
+  CUSTOMER_WELCOME: "customer-welcome",
   CONTACT: "contact-message",
 } as const
 
@@ -219,6 +364,12 @@ export function renderEmail(template: string, data: any): EmailContent {
   switch (template) {
     case TEMPLATES.ORDER_PLACED:
       return orderPlaced(data)
+    case TEMPLATES.ORDER_SHIPPED:
+    case TEMPLATES.ORDER_DELIVERED:
+    case TEMPLATES.ORDER_CANCELED:
+      return orderStatusEmail(template, data)
+    case TEMPLATES.CUSTOMER_WELCOME:
+      return customerWelcome(data)
     case TEMPLATES.CONTACT:
       return contactMessage(data)
     default:
