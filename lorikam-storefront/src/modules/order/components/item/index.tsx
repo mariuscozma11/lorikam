@@ -1,3 +1,4 @@
+import customizationLabel from "@lib/util/customization-label"
 import { HttpTypes } from "@medusajs/types"
 import { Table, Text } from "@medusajs/ui"
 
@@ -39,7 +40,11 @@ const Item = ({ item, currencyCode }: ItemProps) => {
                 key={key}
                 className="txt-small text-ui-fg-muted"
               >
-                {key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}: {value}
+                {customizationLabel(
+                  key,
+                  item.metadata?.customization_labels as Record<string, string>
+                )}
+                : {value}
               </Text>
             ))}
           </div>

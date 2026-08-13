@@ -67,6 +67,12 @@ const PREDEFINED_FIELDS: PredefinedField[] = [
 const generateKey = (label: string): string => {
   return label
     .toLowerCase()
+    // Fold diacritics first — without this "Număr tricou" became
+    // "num_r_tricou" because ă was stripped instead of turned into a.
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ș/g, "s")
+    .replace(/ț/g, "t")
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_|_$/g, "")
 }

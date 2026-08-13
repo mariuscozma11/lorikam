@@ -176,9 +176,16 @@ export default function ProductActions({
 
     setIsAdding(true)
 
-    // Build metadata with customizations if present
+    // Build metadata with customizations if present. Labels ride along so the
+    // cart/order lines can show "Număr tricou" instead of prettifying the
+    // slug key into "Num R Tricou".
     const metadata = customizationFields.length > 0
-      ? { customizations: customizationValues }
+      ? {
+          customizations: customizationValues,
+          customization_labels: Object.fromEntries(
+            customizationFields.map((f) => [f.key, f.label])
+          ),
+        }
       : undefined
 
     await addToCart({

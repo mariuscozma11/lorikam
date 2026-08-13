@@ -2,6 +2,7 @@
 
 import { Table, Text, clx } from "@medusajs/ui"
 import { updateLineItem } from "@lib/data/cart"
+import customizationLabel from "@lib/util/customization-label"
 import { HttpTypes } from "@medusajs/types"
 import CartItemSelect from "@modules/cart/components/cart-item-select"
 import ErrorMessage from "@modules/checkout/components/error-message"
@@ -78,7 +79,11 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
                 key={key}
                 className="txt-small text-ui-fg-muted"
               >
-                {key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}: {value}
+                {customizationLabel(
+                  key,
+                  item.metadata?.customization_labels as Record<string, string>
+                )}
+                : {value}
               </Text>
             ))}
           </div>
