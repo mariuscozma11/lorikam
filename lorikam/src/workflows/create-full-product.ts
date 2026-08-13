@@ -36,6 +36,7 @@ const createFullProductStep = createStep(
     const link = container.resolve(ContainerRegistrationKeys.LINK)
     const colorService = container.resolve(COLOR_MODULE)
     const salesChannelService = container.resolve(Modules.SALES_CHANNEL)
+    const fulfillmentService = container.resolve(Modules.FULFILLMENT)
 
     // Resolve selected colors (name + hex) for the Culoare option + color_map
     let colors: { id: string; name: string; hex_codes: string[] }[] = []
@@ -92,6 +93,15 @@ const createFullProductStep = createStep(
     )
     const salesChannelId = channels?.[0]?.id
 
+    // Without a shipping profile the cart refuses every shipping method with
+    // "cart items require shipping profiles that are not satisfied by the
+    // current shipping methods", so checkout can never complete.
+    const [defaultShippingProfile] =
+      await fulfillmentService.listShippingProfiles(
+        { type: "default" },
+        { take: 1 }
+      )
+
     const metadata: Record<string, any> = {}
     if (colorNames.length) metadata.color_map = colorMap
     if (input.customization_fields?.length) {
@@ -115,6 +125,9 @@ const createFullProductStep = createStep(
             ...(Object.keys(metadata).length ? { metadata } : {}),
             ...(salesChannelId
               ? { sales_channels: [{ id: salesChannelId }] }
+              : {}),
+            ...(defaultShippingProfile
+              ? { shipping_profile_id: defaultShippingProfile.id }
               : {}),
           },
         ],
