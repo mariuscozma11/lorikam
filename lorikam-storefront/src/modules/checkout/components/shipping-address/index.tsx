@@ -29,7 +29,16 @@ const ShippingAddress = ({
     "shipping_address.province": cart?.shipping_address?.province || "",
     "shipping_address.phone": cart?.shipping_address?.phone || "",
     email: cart?.email || "",
+    company_name: (cart?.metadata?.company_name as string) || "",
+    company_cui: (cart?.metadata?.company_cui as string) || "",
+    company_reg_com: (cart?.metadata?.company_reg_com as string) || "",
   })
+
+  const [isCompany, setIsCompany] = useState<boolean>(
+    Boolean(cart?.metadata?.is_company)
+  )
+
+  const [saveAddress, setSaveAddress] = useState(true)
 
   const countriesInRegion = useMemo(
     () => cart?.region?.countries?.map((c) => c.iso_2),
@@ -61,7 +70,14 @@ const ShippingAddress = ({
         "shipping_address.country_code": address?.country_code || "",
         "shipping_address.province": address?.province || "",
         "shipping_address.phone": address?.phone || "",
+        company_name: address?.company || prevState.company_name || "",
       }))
+
+    // A saved address carrying a company is a B2B one — open the block so the
+    // fiscal fields are visible (and required) instead of silently empty.
+    if (address?.company) {
+      setIsCompany(true)
+    }
 
     email &&
       setFormData((prevState: Record<string, any>) => ({
@@ -80,6 +96,38 @@ const ShippingAddress = ({
       setFormAddress(undefined, customer.email)
     }
   }, [cart]) // Add cart as a dependency
+
+  // Prefill from the account on a fresh cart: the customer's default shipping
+  // address (or the first one usable in this region), falling back to the
+  // name/phone on the profile so a logged-in customer never retypes them.
+  useEffect(() => {
+    if (!customer || cart?.shipping_address) {
+      return
+    }
+
+    const defaultAddress =
+      addressesInRegion?.find((a) => a.is_default_shipping) ||
+      addressesInRegion?.[0]
+
+    if (defaultAddress) {
+      setFormAddress(
+        defaultAddress as HttpTypes.StoreCartAddress,
+        cart?.email || customer.email
+      )
+      return
+    }
+
+    setFormData((prevState: Record<string, any>) => ({
+      ...prevState,
+      "shipping_address.first_name":
+        prevState["shipping_address.first_name"] || customer.first_name || "",
+      "shipping_address.last_name":
+        prevState["shipping_address.last_name"] || customer.last_name || "",
+      "shipping_address.phone":
+        prevState["shipping_address.phone"] || customer.phone || "",
+      email: prevState.email || customer.email || "",
+    }))
+  }, [customer, cart?.shipping_address, addressesInRegion])
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -139,14 +187,6 @@ const ShippingAddress = ({
           data-testid="shipping-address-input"
         />
         <Input
-          label="Companie"
-          name="shipping_address.company"
-          value={formData["shipping_address.company"]}
-          onChange={handleChange}
-          autoComplete="organization"
-          data-testid="shipping-company-input"
-        />
-        <Input
           label="Cod postal"
           name="shipping_address.postal_code"
           autoComplete="postal-code"
@@ -184,6 +224,44 @@ const ShippingAddress = ({
       </div>
       <div className="my-8 space-y-4">
         <Checkbox
+          label="Comand pe firmă (persoană juridică)"
+          name="is_company"
+          checked={isCompany}
+          onChange={() => setIsCompany((prev) => !prev)}
+          data-testid="is-company-checkbox"
+        />
+
+        {isCompany && (
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            <Input
+              label="Denumire firmă"
+              name="company_name"
+              autoComplete="organization"
+              value={formData.company_name}
+              onChange={handleChange}
+              required
+              data-testid="company-name-input"
+            />
+            <Input
+              label="CUI / CIF"
+              name="company_cui"
+              value={formData.company_cui}
+              onChange={handleChange}
+              required
+              data-testid="company-cui-input"
+            />
+            <Input
+              label="Nr. Reg. Comerțului"
+              name="company_reg_com"
+              value={formData.company_reg_com}
+              onChange={handleChange}
+              required
+              data-testid="company-reg-com-input"
+            />
+          </div>
+        )}
+
+        <Checkbox
           label="Adresa de facturare este aceeași cu cea de livrare"
           name="same_as_billing"
           checked={checked}
@@ -194,6 +272,8 @@ const ShippingAddress = ({
           <Checkbox
             label="Salvează adresa în contul meu"
             name="save_address"
+            checked={saveAddress}
+            onChange={() => setSaveAddress((prev) => !prev)}
             data-testid="save-address-checkbox"
           />
         )}

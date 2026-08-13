@@ -16,11 +16,15 @@ const CheckboxWithLabel: React.FC<CheckboxProps> = ({
   name,
   'data-testid': dataTestId
 }) => {
+  // Every instance used to render id="checkbox", so each label pointed at the
+  // first box on the page and toggled the wrong one.
+  const id = name ? `checkbox-${name}` : "checkbox"
+
   return (
     <div className="flex items-center space-x-2 ">
       <Checkbox
         className="text-base-regular flex items-center gap-x-2"
-        id="checkbox"
+        id={id}
         role="checkbox"
         type="button"
         checked={checked}
@@ -30,7 +34,7 @@ const CheckboxWithLabel: React.FC<CheckboxProps> = ({
         data-testid={dataTestId}
       />
       <Label
-        htmlFor="checkbox"
+        htmlFor={id}
         className="!transform-none !txt-medium"
         size="large"
       >

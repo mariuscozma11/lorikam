@@ -1,6 +1,7 @@
 "use server"
 
 import { sdk } from "@lib/config"
+import compareAddresses from "@lib/util/compare-addresses"
 import medusaError from "@lib/util/medusa-error"
 import { HttpTypes } from "@medusajs/types"
 import { revalidateTag } from "next/cache"
@@ -342,7 +343,7 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
     if (!formData) {
       throw new Error("No form data found when setting addresses")
     }
-    const cartId = getCartId()
+    const cartId = await getCartId()
     if (!cartId) {
       throw new Error("No existing cart found when setting addresses")
     }
@@ -362,6 +363,27 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       },
       email: formData.get("email"),
     } as any
+
+    // B2B details live on cart metadata — Medusa addresses have no field for
+    // CUI / Reg. Com. Merge instead of replacing so other metadata survives.
+    const isCompany = formData.get("is_company") === "on"
+    const existingCart = await retrieveCart(cartId)
+    data.metadata = {
+      ...(existingCart?.metadata || {}),
+      is_company: isCompany,
+      company_name: isCompany
+        ? (formData.get("company_name") as string) || ""
+        : "",
+      company_cui: isCompany ? (formData.get("company_cui") as string) || "" : "",
+      company_reg_com: isCompany
+        ? (formData.get("company_reg_com") as string) || ""
+        : "",
+    }
+
+    // Keep the address company field in sync so it shows on the invoice.
+    if (isCompany) {
+      data.shipping_address.company = formData.get("company_name") || ""
+    }
 
     const sameAsBilling = formData.get("same_as_billing")
     if (sameAsBilling === "on") data.billing_address = data.shipping_address
@@ -401,9 +423,22 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
         }
 
         try {
-          await sdk.store.customer.createAddress(customerAddress, {}, headers)
-          const customerCacheTag = await getCacheTag("customers")
-          revalidateTag(customerCacheTag)
+          // Don't create a second copy of an address the customer already has
+          // — picking a saved address in the dropdown leaves this checkbox on,
+          // which otherwise duplicates the entry on every checkout.
+          const { addresses } = await sdk.store.customer.listAddress(
+            { limit: 100 },
+            headers
+          )
+          const alreadySaved = addresses?.some((a) =>
+            compareAddresses(a, customerAddress)
+          )
+
+          if (!alreadySaved) {
+            await sdk.store.customer.createAddress(customerAddress, {}, headers)
+            const customerCacheTag = await getCacheTag("customers")
+            revalidateTag(customerCacheTag)
+          }
         } catch {
           // Silently fail - address saving is optional
         }
