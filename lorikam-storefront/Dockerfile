@@ -32,7 +32,8 @@ WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=8000 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    NODE_OPTIONS=--max-http-header-size=65536
 
 # Next standalone output ships its own minimal node_modules + server.js
 COPY --from=builder /app/.next/standalone ./

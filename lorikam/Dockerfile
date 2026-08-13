@@ -23,6 +23,9 @@ RUN apt-get update \
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Admin order-details requests carry a very long `fields` query string; with
+# Node's 16KB default they are rejected with 431 before reaching Medusa.
+ENV NODE_OPTIONS=--max-http-header-size=65536
 
 # medusa build outputs a self-contained server (with its own yarn.lock +
 # package.json) in .medusa/server
