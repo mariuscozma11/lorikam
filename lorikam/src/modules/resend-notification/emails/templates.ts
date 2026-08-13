@@ -46,6 +46,55 @@ function layout(title: string, body: string): string {
 
 type EmailContent = { subject: string; html: string }
 
+// Copy blocks the client can edit from admin (Emailuri). The structural parts
+// — item table, totals, address — stay in code so a bad edit can't produce a
+// broken order email.
+export const EDITABLE_FIELDS = {
+  "order-placed": {
+    subject: "Confirmare comandă #{{display_id}} — Lorikam",
+    heading: "Mulțumim pentru comandă, {{customer_name}}!",
+    intro:
+      "Am primit comanda ta <strong>#{{display_id}}</strong> și o pregătim. Îți trimitem un email când este expediată.",
+    outro: "",
+  },
+  "contact-message": {
+    subject: "Mesaj contact de la {{name}}",
+    heading: "Mesaj nou de contact",
+    intro: "",
+    outro: "",
+  },
+} as const
+
+export type EmailOverrides = Record<string, string | null | undefined>
+
+// Settings key for a template field, e.g. email_order_placed_subject.
+export function overrideKey(template: string, field: string) {
+  return `email_${template.replace(/-/g, "_")}_${field}`
+}
+
+function applyVars(text: string, vars: Record<string, string | number>) {
+  return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, name) =>
+    String(vars[name] ?? "")
+  )
+}
+
+// Falls back to the built-in copy when the client hasn't overridden it. An
+// override saved as an empty string is treated as "use the default" for
+// subject/heading, but as a real empty for the optional outro block.
+function copy(
+  template: keyof typeof EDITABLE_FIELDS,
+  field: "subject" | "heading" | "intro" | "outro",
+  overrides: EmailOverrides | undefined,
+  vars: Record<string, string | number>
+) {
+  const stored = overrides?.[overrideKey(template, field)]
+  const fallback = EDITABLE_FIELDS[template][field] as string
+  const value =
+    field === "outro" ? stored ?? fallback : (stored || "").trim() || fallback
+
+  return applyVars(value ?? "", vars)
+}
+
 function orderPlaced(data: any): EmailContent {
   const order = data?.order ?? data ?? {}
   const items: any[] = Array.isArray(order.items) ? order.items : []
@@ -85,10 +134,13 @@ function orderPlaced(data: any): EmailContent {
        </p>`
     : ""
 
+  const overrides: EmailOverrides | undefined = data?.overrides
+  const vars = { display_id: displayId, customer_name: customerName }
+
   const body = `
-    <h1 style="margin:0 0 8px;font-size:22px;">Mulțumim pentru comandă, ${customerName}!</h1>
+    <h1 style="margin:0 0 8px;font-size:22px;">${copy("order-placed", "heading", overrides, vars)}</h1>
     <p style="margin:0 0 24px;color:#52525b;font-size:15px;">
-      Am primit comanda ta <strong>#${displayId}</strong> și o pregătim. Îți trimitem un email când este expediată.
+      ${copy("order-placed", "intro", overrides, vars)}
     </p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
       <thead>
@@ -117,9 +169,17 @@ function orderPlaced(data: any): EmailContent {
       </tr>
     </table>
     ${addressBlock}
+    ${
+      copy("order-placed", "outro", overrides, vars)
+        ? `<p style="margin:24px 0 0;color:#52525b;font-size:15px;line-height:1.6;">${copy("order-placed", "outro", overrides, vars)}</p>`
+        : ""
+    }
   `
 
-  return { subject: `Confirmare comandă #${displayId} — ${BRAND}`, html: layout(`Confirmare comandă #${displayId}`, body) }
+  return {
+    subject: copy("order-placed", "subject", overrides, vars),
+    html: layout(`Confirmare comandă #${displayId}`, body),
+  }
 }
 
 function genericFallback(data: any): EmailContent {
@@ -132,8 +192,10 @@ function genericFallback(data: any): EmailContent {
 
 function contactMessage(data: any): EmailContent {
   const c = data?.contact ?? data ?? {}
+  const overrides: EmailOverrides | undefined = data?.overrides
+  const vars = { name: c.name || "vizitator", email: c.email || "" }
   const body = `
-    <h1 style="margin:0 0 16px;font-size:20px;">Mesaj nou de contact</h1>
+    <h1 style="margin:0 0 16px;font-size:20px;">${copy("contact-message", "heading", overrides, vars)}</h1>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;">
       <tr><td style="padding:4px 0;color:#71717a;width:90px;">Nume</td><td style="padding:4px 0;font-weight:600;">${c.name || ""}</td></tr>
       <tr><td style="padding:4px 0;color:#71717a;">Email</td><td style="padding:4px 0;"><a href="mailto:${c.email || ""}">${c.email || ""}</a></td></tr>
@@ -143,7 +205,7 @@ function contactMessage(data: any): EmailContent {
     <p style="margin:0;color:#52525b;font-size:15px;line-height:1.6;white-space:pre-wrap;">${(c.message || "").replace(/</g, "&lt;")}</p>
   `
   return {
-    subject: `Mesaj contact de la ${c.name || "vizitator"}`,
+    subject: copy("contact-message", "subject", overrides, vars),
     html: layout("Mesaj de contact", body),
   }
 }

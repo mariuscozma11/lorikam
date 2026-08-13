@@ -7,6 +7,7 @@ import {
 import { Modules } from "@medusajs/framework/utils"
 import { SITE_SETTING_MODULE } from "../modules/site-setting"
 import { TEMPLATES } from "../modules/resend-notification/emails/templates"
+import { loadEmailOverrides } from "../modules/resend-notification/emails/load-overrides"
 
 export type ContactInput = {
   name: string
@@ -38,7 +39,7 @@ const sendContactStep = createStep(
       to,
       channel: "email",
       template: TEMPLATES.CONTACT,
-      data: { contact: input },
+      data: { contact: input, overrides: await loadEmailOverrides(container) },
     })
 
     return new StepResponse({ sent: true })

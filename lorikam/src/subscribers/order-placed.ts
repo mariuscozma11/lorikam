@@ -1,6 +1,7 @@
 import { SubscriberArgs, type SubscriberConfig } from "@medusajs/framework"
 import { Modules } from "@medusajs/framework/utils"
 import { TEMPLATES } from "../modules/resend-notification/emails/templates"
+import { loadEmailOverrides } from "../modules/resend-notification/emails/load-overrides"
 
 export default async function orderPlacedHandler({
   event: { data },
@@ -48,7 +49,7 @@ export default async function orderPlacedHandler({
       to: order.email,
       channel: "email",
       template: TEMPLATES.ORDER_PLACED,
-      data: { order },
+      data: { order, overrides: await loadEmailOverrides(container) },
     })
 
     logger.info(`order.placed: confirmation email queued for ${order.email}`)
