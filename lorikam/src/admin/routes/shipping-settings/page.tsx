@@ -13,6 +13,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState, useEffect } from "react"
 import { sdk } from "../../lib/sdk"
 import { CurrencyDollar } from "@medusajs/icons"
+import ShippingMethodsPanel from "../../components/shipping-methods-panel"
 
 type ShippingSettings = {
   id?: string
@@ -105,7 +106,10 @@ const ShippingSettingsPage = () => {
   }
 
   return (
-    <Container className="divide-y p-0">
+    <div className="flex flex-col gap-y-4">
+      <ShippingMethodsPanel />
+
+      <Container className="divide-y p-0">
       <div className="flex items-center justify-between px-6 py-4">
         <div>
           <Heading level="h1">Setari Livrare Gratuita</Heading>
@@ -186,12 +190,13 @@ const ShippingSettingsPage = () => {
           </div>
         )}
       </div>
-    </Container>
+      </Container>
+    </div>
   )
 }
 
 export const config = defineRouteConfig({
-  label: "Livrare Gratuita",
+  label: "Livrare",
   icon: CurrencyDollar,
 })
 

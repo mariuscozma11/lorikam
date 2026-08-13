@@ -6,6 +6,11 @@ import {
 import { createFindParams } from "@medusajs/medusa/api/utils/validators"
 import { UpdateShippingSettingsSchema } from "./admin/shipping-settings/validators"
 import {
+  CreateShippingMethodSchema,
+  UpdateShippingMethodSchema,
+} from "./admin/shipping-methods/validators"
+import { UpdateEmailTemplatesSchema } from "./admin/email-templates/validators"
+import {
   CreateCustomerDiscountSchema,
   UpdateCustomerDiscountSchema,
 } from "./admin/customer-discounts/validators"
@@ -42,6 +47,21 @@ export default defineMiddlewares({
       matcher: "/admin/shipping-settings",
       method: "POST",
       middlewares: [validateAndTransformBody(UpdateShippingSettingsSchema)],
+    },
+    {
+      matcher: "/admin/email-templates",
+      method: "POST",
+      middlewares: [validateAndTransformBody(UpdateEmailTemplatesSchema)],
+    },
+    {
+      matcher: "/admin/shipping-methods",
+      method: "POST",
+      middlewares: [validateAndTransformBody(CreateShippingMethodSchema)],
+    },
+    {
+      matcher: "/admin/shipping-methods/:id",
+      method: "POST",
+      middlewares: [validateAndTransformBody(UpdateShippingMethodSchema)],
     },
     {
       matcher: "/admin/customer-discounts",
