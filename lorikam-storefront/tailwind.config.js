@@ -12,6 +12,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      transitionTimingFunction: {
+        // iOS-sheet feel: fast out of the gate, long soft landing.
+        drawer: "cubic-bezier(0.32, 0.72, 0, 1)",
+      },
       transitionProperty: {
         width: "width margin",
         height: "height",

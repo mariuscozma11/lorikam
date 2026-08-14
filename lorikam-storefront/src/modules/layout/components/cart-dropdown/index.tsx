@@ -90,18 +90,18 @@ const CartDropdown = ({
       onMouseEnter={openAndCancel}
       onMouseLeave={close}
     >
-      <Popover className="relative h-full">
-        <PopoverButton className="h-full">
+      <Popover className="relative h-full flex items-center">
+        <PopoverButton className="flex outline-none">
           <LocalizedClientLink
-            className="hover:text-ui-fg-base relative flex items-center"
+            className="relative flex items-center justify-center w-10 h-10 rounded-full text-ui-fg-subtle hover:text-ui-fg-base hover:bg-black/[0.04] active:scale-95 transition-[color,background-color,transform] duration-200"
             href="/cart"
             data-testid="nav-cart-link"
             aria-label={`Coș (${totalItems})`}
           >
-            <ShoppingBag size="22" />
+            <ShoppingBag size="20" />
             {totalItems > 0 && (
               <span
-                className="absolute -top-2 -right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-semibold leading-none"
+                className="absolute top-1 right-0.5 flex items-center justify-center min-w-[17px] h-[17px] px-1 rounded-full bg-ui-fg-base text-white text-[10px] font-semibold leading-none ring-2 ring-white tabular-nums"
                 data-testid="cart-item-count"
               >
                 {totalItems > 99 ? "99+" : totalItems}
@@ -121,11 +121,20 @@ const CartDropdown = ({
         >
           <PopoverPanel
             static
-            className="hidden small:block absolute top-[calc(100%+1px)] right-0 bg-white border-x border-b border-gray-200 w-[420px] text-ui-fg-base"
+            // Flush against the header: a gap here would break the
+            // hover-to-open bridge between the icon and the panel.
+            className="hidden small:block absolute top-full right-0 w-[420px] rounded-b-2xl bg-white border-x border-b border-black/[0.07] shadow-[0_28px_48px_-24px_rgba(0,0,0,0.4)] text-ui-fg-base overflow-hidden"
             data-testid="nav-cart-dropdown"
           >
-            <div className="p-4 flex items-center justify-center">
-              <h3 className="text-large-semi">Coș</h3>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.06]">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+                Coș
+              </h3>
+              {totalItems > 0 && (
+                <span className="text-[11px] text-ui-fg-muted tabular-nums">
+                  {totalItems} {totalItems === 1 ? "produs" : "produse"}
+                </span>
+              )}
             </div>
             {cartState && cartState.items?.length ? (
               <>

@@ -1,15 +1,12 @@
 import { Suspense } from "react"
-import Image from "next/image"
 
 import { getCustomerDiscount } from "@lib/data/customer"
 import { getTeams } from "@lib/data/teams"
+import { getSiteImage } from "@lib/data/site-settings"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import User from "@modules/common/icons/user"
 import ShoppingBag from "@modules/common/icons/shopping-bag"
 import CartButton from "@modules/layout/components/cart-button"
-import SideMenu from "@modules/layout/components/side-menu"
-import ShopMenu from "@modules/layout/components/shop-menu"
-import { getSiteImage } from "@lib/data/site-settings"
+import NavBar from "@modules/layout/components/nav-bar"
 
 export default async function Nav() {
   const [customerDiscount, teams, logo] = await Promise.all([
@@ -18,72 +15,32 @@ export default async function Nav() {
     getSiteImage("logo", "/logo-retina.png"),
   ])
 
-  const isCollaborator = customerDiscount?.is_collaborator ?? false
-
   return (
-    <div className="sticky top-0 inset-x-0 z-50 group">
-      <header className={`relative h-16 mx-auto border-b duration-200 border-ui-border-base ${isCollaborator ? "bg-gray-100" : "bg-white"}`}>
-        <nav className="content-container txt-xsmall-plus text-ui-fg-subtle flex items-center justify-between w-full h-full text-small-regular">
-          {/* Left side - Shop links (desktop only) */}
-          <div className="flex-1 basis-0 h-full flex items-center">
-            <div className="hidden small:flex items-center gap-x-6 h-full">
-              <ShopMenu teams={teams} />
-            </div>
-          </div>
-
-          {/* Center - Logo */}
-          <div className="flex items-center h-full">
+    <NavBar
+      logo={logo}
+      teams={teams}
+      isCollaborator={customerDiscount?.is_collaborator ?? false}
+      discountPercentage={
+        customerDiscount?.customer_discount?.is_active
+          ? customerDiscount.customer_discount.discount_percentage
+          : null
+      }
+      cartSlot={
+        <Suspense
+          fallback={
             <LocalizedClientLink
-              href="/"
-              className="flex items-center hover:opacity-80"
-              data-testid="nav-store-link"
+              className="relative flex items-center justify-center w-10 h-10 rounded-full text-ui-fg-subtle hover:text-ui-fg-base hover:bg-black/[0.04] transition-colors"
+              href="/cart"
+              data-testid="nav-cart-link"
+              aria-label="Coș (0)"
             >
-              <Image
-                src={logo}
-                alt="Lorikam"
-                width={446}
-                height={104}
-                priority
-                className="h-9 w-auto"
-              />
+              <ShoppingBag size="20" />
             </LocalizedClientLink>
-          </div>
-
-          {/* Right side - Account, Cart (desktop) + Mobile menu trigger */}
-          <div className="flex items-center gap-x-4 h-full flex-1 basis-0 justify-end">
-            {/* Desktop: Account and Cart */}
-            <div className="hidden small:flex items-center gap-x-6 h-full">
-              <LocalizedClientLink
-                className="hover:text-ui-fg-base flex items-center"
-                href="/account"
-                data-testid="nav-account-link"
-                aria-label="Cont"
-              >
-                <User size="22" />
-              </LocalizedClientLink>
-              <Suspense
-                fallback={
-                  <LocalizedClientLink
-                    className="hover:text-ui-fg-base flex items-center"
-                    href="/cart"
-                    data-testid="nav-cart-link"
-                    aria-label="Coș (0)"
-                  >
-                    <ShoppingBag size="22" />
-                  </LocalizedClientLink>
-                }
-              >
-                <CartButton />
-              </Suspense>
-            </div>
-
-            {/* Mobile: Hamburger menu */}
-            <div className="small:hidden h-full">
-              <SideMenu teams={teams} />
-            </div>
-          </div>
-        </nav>
-      </header>
-    </div>
+          }
+        >
+          <CartButton />
+        </Suspense>
+      }
+    />
   )
 }
