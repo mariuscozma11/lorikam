@@ -6,17 +6,158 @@ import {
   PopoverPanel,
   Transition,
 } from "@headlessui/react"
+import { updateLineItem } from "@lib/data/cart"
+import customizationLabel from "@lib/util/customization-label"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
-import { Button } from "@medusajs/ui"
+import { Button, clx } from "@medusajs/ui"
 import DeleteButton from "@modules/common/components/delete-button"
-import LineItemOptions from "@modules/common/components/line-item-options"
 import LineItemPrice from "@modules/common/components/line-item-price"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import ShoppingBag from "@modules/common/icons/shopping-bag"
 import Thumbnail from "@modules/products/components/thumbnail"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useRef, useState } from "react"
+
+// Matches the cap the cart page uses until real inventory is wired up.
+const MAX_QUANTITY = 10
+
+type CartLineProps = {
+  item: HttpTypes.StoreCartLineItem
+  currencyCode: string
+}
+
+const CartLine = ({ item, currencyCode }: CartLineProps) => {
+  const [updating, setUpdating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const customizations = item.metadata?.customizations as
+    | Record<string, string>
+    | undefined
+
+  const setQuantity = async (quantity: number) => {
+    if (quantity < 1 || quantity > MAX_QUANTITY) {
+      return
+    }
+
+    setError(null)
+    setUpdating(true)
+
+    await updateLineItem({ lineId: item.id, quantity })
+      .catch((err) => setError(err.message))
+      .finally(() => setUpdating(false))
+  }
+
+  const stepperButton =
+    "w-7 h-7 grid place-items-center rounded-full text-ui-fg-subtle transition-colors hover:text-ui-fg-base hover:bg-black/[0.04] disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ui-fg-subtle"
+
+  return (
+    <li
+      className="group/line flex gap-x-3 px-5 py-4"
+      data-testid="cart-item"
+    >
+      <LocalizedClientLink
+        href={`/products/${item.product_handle}`}
+        className="shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-ui-bg-subtle ring-1 ring-black/[0.05]"
+        tabIndex={-1}
+        aria-hidden
+      >
+        <Thumbnail
+          thumbnail={(item.variant as any)?.images?.[0]?.url || item.thumbnail}
+          images={item.variant?.product?.images}
+          size="square"
+        />
+      </LocalizedClientLink>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start gap-x-2">
+          <LocalizedClientLink
+            href={`/products/${item.product_handle}`}
+            className="text-sm font-medium leading-snug line-clamp-2 hover:underline underline-offset-2"
+            data-testid="product-link"
+          >
+            {item.title}
+          </LocalizedClientLink>
+
+          {/* Kept out of the way until the row is hovered or tabbed into. */}
+          <DeleteButton
+            id={item.id}
+            className="shrink-0 -mt-1 -mr-1 opacity-0 transition-opacity group-hover/line:opacity-100 focus-within:opacity-100"
+            data-testid="cart-item-remove-button"
+          />
+        </div>
+
+        {item.variant?.title && (
+          <p
+            className="mt-0.5 text-xs text-ui-fg-subtle truncate"
+            data-testid="cart-item-variant"
+          >
+            {item.variant.title}
+          </p>
+        )}
+
+        {customizations && (
+          <ul className="mt-1 space-y-0.5">
+            {Object.entries(customizations).map(([key, value]) => (
+              <li key={key} className="text-xs text-ui-fg-muted truncate">
+                {customizationLabel(
+                  key,
+                  item.metadata?.customization_labels as Record<string, string>
+                )}
+                : {value}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-2 flex items-center justify-between gap-x-2">
+          <div className="inline-flex items-center h-7 rounded-full ring-1 ring-inset ring-black/[0.09]">
+            <button
+              type="button"
+              onClick={() => setQuantity(item.quantity - 1)}
+              disabled={updating || item.quantity <= 1}
+              className={stepperButton}
+              aria-label="Scade cantitatea"
+            >
+              <span aria-hidden>−</span>
+            </button>
+            <span
+              className={clx(
+                "w-6 text-center text-xs tabular-nums transition-opacity",
+                updating && "opacity-40"
+              )}
+              data-testid="cart-item-quantity"
+              data-value={item.quantity}
+            >
+              {item.quantity}
+            </span>
+            <button
+              type="button"
+              onClick={() => setQuantity(item.quantity + 1)}
+              disabled={updating || item.quantity >= MAX_QUANTITY}
+              className={stepperButton}
+              aria-label="Crește cantitatea"
+            >
+              <span aria-hidden>+</span>
+            </button>
+          </div>
+
+          <LineItemPrice
+            item={item}
+            style="tight"
+            currencyCode={currencyCode}
+          />
+        </div>
+
+        {error && (
+          <p className="mt-1 text-xs text-ui-fg-error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    </li>
+  )
+}
 
 const CartDropdown = ({
   cart: cartState,
@@ -84,6 +225,11 @@ const CartDropdown = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalItems, itemRef.current])
 
+  // Copy before sorting — `items` belongs to the cart passed in as a prop.
+  const items = [...(cartState?.items ?? [])].sort((a, b) =>
+    (a.created_at ?? "") > (b.created_at ?? "") ? -1 : 1
+  )
+
   return (
     <div
       className="h-full z-50"
@@ -113,154 +259,110 @@ const CartDropdown = ({
           show={cartDropdownOpen}
           as={Fragment}
           enter="transition ease-out duration-200"
-          enterFrom="opacity-0 translate-y-1"
+          enterFrom="opacity-0 -translate-y-1"
           enterTo="opacity-100 translate-y-0"
           leave="transition ease-in duration-150"
           leaveFrom="opacity-100 translate-y-0"
-          leaveTo="opacity-0 translate-y-1"
+          leaveTo="opacity-0 -translate-y-1"
         >
           <PopoverPanel
             static
-            // Flush against the header: a gap here would break the
-            // hover-to-open bridge between the icon and the panel.
-            className="hidden small:block absolute top-full right-0 w-[420px] rounded-b-2xl bg-white border-x border-b border-black/[0.07] shadow-[0_28px_48px_-24px_rgba(0,0,0,0.4)] text-ui-fg-base overflow-hidden"
+            // The gap to the header lives in this wrapper's padding, not as
+            // empty space: the pointer stays inside the panel on its way
+            // down, so the hover-to-open bridge survives.
+            className="hidden small:block absolute top-full right-0 pt-2.5"
             data-testid="nav-cart-dropdown"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.06]">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em]">
-                Coș
-              </h3>
-              {totalItems > 0 && (
-                <span className="text-[11px] text-ui-fg-muted tabular-nums">
-                  {totalItems} {totalItems === 1 ? "produs" : "produse"}
-                </span>
-              )}
-            </div>
-            {cartState && cartState.items?.length ? (
-              <>
-                <div className="overflow-y-scroll max-h-[402px] px-4 grid grid-cols-1 gap-y-8 no-scrollbar p-px">
-                  {cartState.items
-                    .sort((a, b) => {
-                      return (a.created_at ?? "") > (b.created_at ?? "")
-                        ? -1
-                        : 1
-                    })
-                    .map((item) => (
-                      <div
-                        className="grid grid-cols-[122px_1fr] gap-x-4"
+            <div className="flex flex-col w-[400px] rounded-2xl bg-white border border-black/[0.07] shadow-[0_28px_48px_-24px_rgba(0,0,0,0.4)] text-ui-fg-base overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.06]">
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+                  Coș
+                </h3>
+                {totalItems > 0 && (
+                  <span className="text-[11px] text-ui-fg-muted tabular-nums">
+                    {totalItems} {totalItems === 1 ? "produs" : "produse"}
+                  </span>
+                )}
+              </div>
+
+              {items.length ? (
+                <>
+                  <ul className="max-h-[22rem] overflow-y-auto overscroll-contain divide-y divide-black/[0.05]">
+                    {items.map((item) => (
+                      <CartLine
                         key={item.id}
-                        data-testid="cart-item"
-                      >
-                        <LocalizedClientLink
-                          href={`/products/${item.product_handle}`}
-                          className="w-24"
-                        >
-                          <Thumbnail
-                            thumbnail={(item.variant as any)?.images?.[0]?.url || item.thumbnail}
-                            images={item.variant?.product?.images}
-                            size="square"
-                          />
-                        </LocalizedClientLink>
-                        <div className="flex flex-col justify-between flex-1">
-                          <div className="flex flex-col flex-1">
-                            <div className="flex items-start justify-between">
-                              <div className="flex flex-col overflow-ellipsis whitespace-nowrap mr-4 w-[180px]">
-                                <h3 className="text-base-regular overflow-hidden text-ellipsis">
-                                  <LocalizedClientLink
-                                    href={`/products/${item.product_handle}`}
-                                    data-testid="product-link"
-                                  >
-                                    {item.title}
-                                  </LocalizedClientLink>
-                                </h3>
-                                <LineItemOptions
-                                  variant={item.variant}
-                                  data-testid="cart-item-variant"
-                                  data-value={item.variant}
-                                />
-                                <span
-                                  data-testid="cart-item-quantity"
-                                  data-value={item.quantity}
-                                >
-                                  Cantitate: {item.quantity}
-                                </span>
-                              </div>
-                              <div className="flex justify-end">
-                                <LineItemPrice
-                                  item={item}
-                                  style="tight"
-                                  currencyCode={cartState.currency_code}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <DeleteButton
-                            id={item.id}
-                            className="mt-1"
-                            data-testid="cart-item-remove-button"
-                          >
-                            Șterge
-                          </DeleteButton>
-                        </div>
-                      </div>
+                        item={item}
+                        currencyCode={cartState!.currency_code}
+                      />
                     ))}
-                </div>
-                <div className="p-4 flex flex-col gap-y-4 text-small-regular">
-                  <div className="flex items-center justify-between">
-                    <span className="text-ui-fg-base font-semibold">
-                      Subtotal{" "}
-                      <span className="font-normal">(fără taxe)</span>
-                    </span>
-                    <span
-                      className="text-large-semi flex flex-col items-end"
-                      data-testid="cart-subtotal"
-                      data-value={discountedSubtotal}
-                    >
-                      {hasDiscount && (
-                        <span className="line-through text-ui-fg-muted text-small-regular">
+                  </ul>
+
+                  <div className="border-t border-black/[0.06] p-5">
+                    <div className="flex items-start justify-between gap-x-4">
+                      <div>
+                        <span className="text-sm font-medium">Subtotal</span>
+                        <span className="block text-[11px] text-ui-fg-muted mt-0.5">
+                          TVA inclus · livrarea se adaugă la checkout
+                        </span>
+                      </div>
+                      <span
+                        className="flex flex-col items-end shrink-0"
+                        data-testid="cart-subtotal"
+                        data-value={discountedSubtotal}
+                      >
+                        {hasDiscount && (
+                          <span className="text-xs line-through text-ui-fg-muted tabular-nums">
+                            {convertToLocale({
+                              amount: originalSubtotal,
+                              currency_code: cartState!.currency_code,
+                            })}
+                          </span>
+                        )}
+                        <span
+                          className={clx(
+                            "text-base font-semibold tabular-nums",
+                            hasDiscount && "text-ui-fg-interactive"
+                          )}
+                        >
                           {convertToLocale({
-                            amount: originalSubtotal,
-                            currency_code: cartState.currency_code,
+                            amount: discountedSubtotal,
+                            currency_code: cartState!.currency_code,
                           })}
                         </span>
-                      )}
-                      <span className={hasDiscount ? "text-ui-fg-interactive" : ""}>
-                        {convertToLocale({
-                          amount: discountedSubtotal,
-                          currency_code: cartState.currency_code,
-                        })}
                       </span>
-                    </span>
+                    </div>
+
+                    <LocalizedClientLink href="/cart" passHref>
+                      <Button
+                        className="w-full mt-4"
+                        size="large"
+                        data-testid="go-to-cart-button"
+                      >
+                        Vezi coșul
+                      </Button>
+                    </LocalizedClientLink>
                   </div>
-                  <LocalizedClientLink href="/cart" passHref>
-                    <Button
-                      className="w-full"
-                      size="large"
-                      data-testid="go-to-cart-button"
-                    >
-                      Vezi coșul
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-y-3 px-5 py-14 text-center">
+                  <div className="w-12 h-12 rounded-full bg-ui-bg-subtle grid place-items-center text-ui-fg-muted">
+                    <ShoppingBag size="22" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Coșul tău este gol</p>
+                    <p className="mt-1 text-xs text-ui-fg-muted">
+                      Adaugă produse ca să le vezi aici.
+                    </p>
+                  </div>
+                  <LocalizedClientLink href="/store" onClick={close}>
+                    <span className="sr-only">Mergi la pagina cu produse</span>
+                    <Button variant="secondary" size="small">
+                      Explorează produse
                     </Button>
                   </LocalizedClientLink>
                 </div>
-              </>
-            ) : (
-              <div>
-                <div className="flex py-16 flex-col gap-y-4 items-center justify-center">
-                  <div className="bg-gray-900 text-small-regular flex items-center justify-center w-6 h-6 rounded-full text-white">
-                    <span>0</span>
-                  </div>
-                  <span>Coșul tău este gol.</span>
-                  <div>
-                    <LocalizedClientLink href="/store">
-                      <>
-                        <span className="sr-only">Mergi la pagina cu produse</span>
-                        <Button onClick={close}>Explorează produse</Button>
-                      </>
-                    </LocalizedClientLink>
-                  </div>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </PopoverPanel>
         </Transition>
       </Popover>
