@@ -42,8 +42,15 @@ STRIPE_API_KEY=sk_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 # Email (fără cheie => provider local/consolă)
 RESEND_API_KEY=re_...
-RESEND_FROM=Lorikam <comenzi@lorikam.ro>
+# ATENȚIE: domeniul din RESEND_FROM trebuie verificat în Resend, altfel Resend
+# răspunde 403 și NICIUN email nu pleacă. Verificat momentan: lorikam.com.
+# Dacă vrei să trimiți de pe lorikam.ro, verifică întâi domeniul în Resend.
+RESEND_FROM=Lorikam <comenzi@lorikam.com>
 ```
+
+> Expeditorul, adresa de răspuns și emailul de contact se pot schimba ulterior
+> din admin (**Emailuri → Expeditor**), fără restart. `RESEND_FROM` rămâne doar
+> valoarea implicită folosită până când se completează acolo.
 
 - **Domain:** `https://api.lorikam.ro` (Coolify face SSL automat).
 - Deploy. La pornire rulează automat `medusa db:migrate` (vezi `CMD` din Dockerfile).
