@@ -9,7 +9,10 @@ import {
   CreateShippingMethodSchema,
   UpdateShippingMethodSchema,
 } from "./admin/shipping-methods/validators"
-import { UpdateEmailTemplatesSchema } from "./admin/email-templates/validators"
+import {
+  UpdateEmailTemplatesSchema,
+  SendTestEmailSchema,
+} from "./admin/email-templates/validators"
 import {
   CreateCustomerDiscountSchema,
   UpdateCustomerDiscountSchema,
@@ -47,6 +50,11 @@ export default defineMiddlewares({
       matcher: "/admin/shipping-settings",
       method: "POST",
       middlewares: [validateAndTransformBody(UpdateShippingSettingsSchema)],
+    },
+    {
+      matcher: "/admin/email-templates/test",
+      method: "POST",
+      middlewares: [validateAndTransformBody(SendTestEmailSchema)],
     },
     {
       matcher: "/admin/email-templates",

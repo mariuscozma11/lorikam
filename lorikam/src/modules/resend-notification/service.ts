@@ -19,6 +19,28 @@ type ResendOptions = {
   from: string
 }
 
+const clean = (value: string | null | undefined) => {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
+}
+
+/**
+ * Builds `Name <address>` from the stored sender settings. Returns undefined
+ * when no address is configured so the caller can fall back to the env value.
+ */
+export function senderFrom(
+  overrides: Record<string, string | null | undefined>
+) {
+  const address = clean(overrides.email_from_address)
+
+  if (!address) {
+    return undefined
+  }
+
+  const name = clean(overrides.email_from_name)
+  return name ? `${name} <${address}>` : address
+}
+
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
   static identifier = "resend"
 
@@ -61,10 +83,23 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
       notification.data ?? {}
     )
 
+    // Sender identity is editable from admin (Emailuri → Expeditor) and rides
+    // along in `overrides`; the env value is only the fallback.
+    const overrides = ((notification.data as any)?.overrides ?? {}) as Record<
+      string,
+      string | null | undefined
+    >
+    const from = senderFrom(overrides) ?? this.options_.from
+    // Without a reply-to, hitting reply goes to the sending address, which is
+    // send-only and drops the message.
+    const replyTo =
+      clean(overrides.email_reply_to) ?? clean(overrides.company_email)
+
     try {
       const { data, error } = await this.client_.emails.send({
-        from: this.options_.from,
+        from,
         to: [notification.to],
+        ...(replyTo ? { replyTo } : {}),
         subject,
         html,
       })

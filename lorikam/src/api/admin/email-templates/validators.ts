@@ -8,3 +8,10 @@ export const UpdateEmailTemplatesSchema = z.object({
 export type UpdateEmailTemplatesType = z.infer<
   typeof UpdateEmailTemplatesSchema
 >
+
+export const SendTestEmailSchema = z.object({
+  to: z.string().email(),
+  template: z.string().optional(),
+})
+
+export type SendTestEmailType = z.infer<typeof SendTestEmailSchema>

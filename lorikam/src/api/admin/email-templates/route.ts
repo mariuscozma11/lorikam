@@ -10,6 +10,12 @@ import {
   overrideKey,
 } from "../../../modules/resend-notification/emails/templates"
 import { UpdateEmailTemplatesType } from "./validators"
+import {
+  SETTINGS_META,
+  SETTING_KEYS,
+  resendStatus,
+  validateSettings,
+} from "./settings"
 
 const TEMPLATE_META = [
   {
@@ -66,6 +72,14 @@ export const GET = async (
   const stored = new Map(settings.map((s: any) => [s.key, s.value]))
 
   res.json({
+    connection: await resendStatus(),
+    // Fallback shown as the placeholder so the client can see what goes out
+    // today even before overriding anything.
+    sender_fallback: process.env.RESEND_FROM ?? null,
+    settings: SETTINGS_META.map((meta) => ({
+      ...meta,
+      value: stored.get(meta.key) ?? "",
+    })),
     templates: TEMPLATE_META.map((meta) => {
       const defaults = EDITABLE_FIELDS[meta.id]
 
@@ -95,19 +109,26 @@ export const POST = async (
 
   // Only accept keys we actually generate, so this can't be used to write
   // arbitrary site settings.
-  const allowed = new Set(
-    TEMPLATE_META.flatMap((meta) =>
+  const allowed = new Set([
+    ...TEMPLATE_META.flatMap((meta) =>
       ["subject", "heading", "intro", "outro"].map((f) =>
         overrideKey(meta.id, f)
       )
-    )
-  )
+    ),
+    ...SETTING_KEYS,
+  ])
 
   const rejected = entries.filter(([key]) => !allowed.has(key)).map(([k]) => k)
   if (rejected.length) {
     res.status(400).json({
       message: `Chei necunoscute: ${rejected.join(", ")}`,
     })
+    return
+  }
+
+  const errors = await validateSettings(Object.fromEntries(entries))
+  if (errors.length) {
+    res.status(400).json({ message: errors.join(" ") })
     return
   }
 
