@@ -153,7 +153,7 @@ const EmailTemplatesPage = () => {
 
   const testMutation = useMutation({
     mutationFn: async () =>
-      sdk.client.fetch<{ to: string }>("/admin/email-templates/test", {
+      sdk.client.fetch<{ to: string }>("/admin/email-templates/send-test", {
         method: "POST",
         body: { to: testTo, template: active?.id ?? "order-placed" },
       }),

@@ -52,7 +52,7 @@ export default defineMiddlewares({
       middlewares: [validateAndTransformBody(UpdateShippingSettingsSchema)],
     },
     {
-      matcher: "/admin/email-templates/test",
+      matcher: "/admin/email-templates/send-test",
       method: "POST",
       middlewares: [validateAndTransformBody(SendTestEmailSchema)],
     },
