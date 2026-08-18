@@ -30,6 +30,7 @@ export const POST = async (
   }
 
   const notification = req.scope.resolve(Modules.NOTIFICATION)
+  const logger = req.scope.resolve("logger")
 
   try {
     await notification.createNotifications({
@@ -39,13 +40,24 @@ export const POST = async (
       data: { ...sample, overrides: await loadEmailOverrides(req.scope) },
     })
   } catch (e: any) {
-    // Surface Resend's own wording — "domain not verified" is far more useful
-    // to the client than a generic failure.
+    // Medusa wraps provider failures, so the useful part is sometimes nested.
+    const detail =
+      [e?.message, e?.cause?.message, e?.errors?.[0]?.message]
+        .map((m) => (typeof m === "string" ? m.trim() : ""))
+        .find(Boolean) ?? ""
+
+    // Always log the whole thing: the browser only ever sees `detail`.
+    logger.error(`Email de test către ${to} (${template}) a eșuat: ${e?.stack ?? e}`)
+
     res.status(502).json({
-      message: `Trimiterea a eșuat: ${e?.message ?? "eroare necunoscută"}`,
+      message: `Trimiterea a eșuat: ${
+        detail || "vezi consola serverului pentru detalii."
+      }`,
     })
     return
   }
+
+  logger.info(`Email de test trimis către ${to} (${template}).`)
 
   res.json({ success: true, to, template })
 }

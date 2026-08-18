@@ -52,6 +52,30 @@ type EmailConfig = {
   templates: EmailTemplate[]
 }
 
+/**
+ * The SDK throws a FetchError whose `message` is the server's `message` field,
+ * falling back to statusText — which is empty for some responses, leaving the
+ * toast reading just "Eroare: ". Always end up with something actionable.
+ */
+const errorMessage = (error: unknown) => {
+  const e = error as
+    | { message?: string; status?: number; statusText?: string }
+    | undefined
+  const message = e?.message?.trim()
+
+  if (message) {
+    return message
+  }
+
+  if (e?.status) {
+    return `Serverul a raspuns ${e.status}${
+      e.statusText ? ` ${e.statusText}` : ""
+    }. Vezi consola serverului pentru detalii.`
+  }
+
+  return "Eroare necunoscuta. Vezi consola serverului pentru detalii."
+}
+
 const FIELD_LABELS: Record<TemplateField["field"], string> = {
   subject: "Subiect",
   heading: "Titlu în email",
@@ -105,7 +129,7 @@ const EmailTemplatesPage = () => {
       queryClient.invalidateQueries({ queryKey: ["email-templates"] })
       toast.success("Sabloanele de email au fost salvate!")
     },
-    onError: (error) => toast.error("Eroare: " + (error as Error).message),
+    onError: (error) => toast.error("Eroare: " + errorMessage(error)),
   })
 
   const previewMutation = useMutation({
@@ -124,7 +148,7 @@ const EmailTemplatesPage = () => {
       setPreviewSubject(result.subject)
       setPreviewHtml(result.html)
     },
-    onError: (error) => toast.error("Eroare: " + (error as Error).message),
+    onError: (error) => toast.error("Eroare: " + errorMessage(error)),
   })
 
   const testMutation = useMutation({
@@ -135,7 +159,7 @@ const EmailTemplatesPage = () => {
       }),
     onSuccess: (result) =>
       toast.success(`Email de test trimis catre ${result.to}.`),
-    onError: (error) => toast.error("Eroare: " + (error as Error).message),
+    onError: (error) => toast.error("Eroare: " + errorMessage(error)),
   })
 
   const isDirty =
