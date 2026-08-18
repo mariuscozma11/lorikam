@@ -34,9 +34,19 @@ COPY --from=builder /app/.medusa/server ./
 # Install deps with Yarn (project uses Yarn 4 / node-modules linker).
 # .medusa/server ships no .yarnrc.yml, so set the linker explicitly —
 # otherwise Yarn 4 defaults to PnP, which Medusa does not support.
+#
+# `workspaces focus --production` instead of `install`: medusa build lists
+# jest, @swc/core, @types/* and react as devDependencies, none of which the
+# server needs at runtime (the admin is already compiled to static assets in
+# the builder stage). Saves ~170MB.
+#
+# The cache clean matters just as much and must stay in this RUN — Yarn 4
+# keeps a global cache of every package zip (~450MB here), and it would
+# otherwise be committed into the final layer for no reason.
 RUN corepack enable \
   && printf 'nodeLinker: node-modules\n' > .yarnrc.yml \
-  && yarn install --immutable
+  && yarn workspaces focus --production \
+  && yarn cache clean --all
 
 EXPOSE 9000
 
