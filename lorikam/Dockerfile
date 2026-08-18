@@ -10,6 +10,15 @@ RUN apt-get update \
 WORKDIR /app
 COPY . .
 
+# `medusa build` peaks around 1.8GB compiling the admin dashboard. Left
+# uncapped, V8 sizes its heap against the HOST's memory, ignores the room
+# actually available in the container, and gets OOM-killed mid-compile — which
+# surfaces as the build dying at "Compiling frontend source..." with no error.
+# Capping makes V8 collect instead of grow; measured cost is nil.
+# Raise via --build-arg on a larger machine.
+ARG NODE_BUILD_MEMORY=1536
+ENV NODE_OPTIONS=--max-old-space-size=$NODE_BUILD_MEMORY
+
 RUN corepack enable \
   && yarn install --immutable \
   && yarn build

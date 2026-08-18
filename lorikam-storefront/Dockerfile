@@ -21,6 +21,11 @@ ENV MEDUSA_BACKEND_URL=$MEDUSA_BACKEND_URL \
     NEXT_PUBLIC_STRIPE_KEY=$NEXT_PUBLIC_STRIPE_KEY \
     NEXT_TELEMETRY_DISABLED=1
 
+# Same OOM guard as the backend — next build prerenders pages and is the other
+# memory spike in this deploy.
+ARG NODE_BUILD_MEMORY=1536
+ENV NODE_OPTIONS=--max-old-space-size=$NODE_BUILD_MEMORY
+
 RUN corepack enable \
   && yarn install --immutable \
   && yarn build
