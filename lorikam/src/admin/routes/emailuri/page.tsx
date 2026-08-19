@@ -47,6 +47,9 @@ type Connection = {
 
 type EmailConfig = {
   connection: Connection
+  effective_sender: string
+  sender_verified: boolean
+  sender_is_default: boolean
   sender_fallback: string | null
   settings: SettingField[]
   templates: EmailTemplate[]
@@ -266,6 +269,31 @@ const EmailTemplatesPage = () => {
               ) : (
                 <Text size="small" className="text-ui-fg-error">
                   niciunul — verifica un domeniu pe resend.com/domains
+                </Text>
+              )}
+            </div>
+          )}
+
+          {connection?.configured && !connection.error && (
+            <div
+              className={
+                "rounded-lg px-3 py-2 " +
+                (data?.sender_verified
+                  ? "bg-ui-bg-subtle"
+                  : "bg-ui-tag-red-bg border border-ui-tag-red-border")
+              }
+            >
+              <Text size="small">
+                Emailurile pleaca de la{" "}
+                <strong className="font-mono">{data?.effective_sender}</strong>
+              </Text>
+              {!data?.sender_verified && (
+                <Text size="small" className="text-ui-fg-error mt-1">
+                  Domeniul acestei adrese nu este verificat in Resend, deci
+                  Resend accepta doar trimiterea catre adresa contului tau.
+                  {data?.sender_is_default
+                    ? " Completeaza „Adresa expeditor” mai jos cu o adresa pe un domeniu verificat."
+                    : ""}
                 </Text>
               )}
             </div>

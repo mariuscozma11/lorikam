@@ -16,6 +16,7 @@ import {
   resendStatus,
   validateSettings,
 } from "./settings"
+import { senderFrom } from "../../../modules/resend-notification/service"
 
 const TEMPLATE_META = [
   {
@@ -71,8 +72,30 @@ export const GET = async (
   const settings = await siteSettingService.listSiteSettings({})
   const stored = new Map(settings.map((s: any) => [s.key, s.value]))
 
+  const connection = await resendStatus()
+  const fallback = process.env.RESEND_FROM ?? "Lorikam <onboarding@resend.dev>"
+
+  // Resolve the address mail actually leaves from, the same way the provider
+  // does. Unset everywhere, that is Resend's shared sandbox domain, which only
+  // delivers to the account owner — and Resend reports that as a problem with
+  // the *recipient*, which sends people looking in the wrong place.
+  const effectiveSender = senderFrom(
+    Object.fromEntries(stored) as Record<string, string>
+  ) ?? fallback
+
+  const senderDomain = effectiveSender.match(/<([^>]+)>/)?.[1] ?? effectiveSender
+  const senderVerified = connection.domains.some(
+    (d) =>
+      d.status === "verified" &&
+      d.sending &&
+      d.name.toLowerCase() === senderDomain.split("@")[1]?.toLowerCase()
+  )
+
   res.json({
-    connection: await resendStatus(),
+    connection,
+    effective_sender: effectiveSender,
+    sender_verified: senderVerified,
+    sender_is_default: !stored.get("email_from_address"),
     // Fallback shown as the placeholder so the client can see what goes out
     // today even before overriding anything.
     sender_fallback: process.env.RESEND_FROM ?? null,
