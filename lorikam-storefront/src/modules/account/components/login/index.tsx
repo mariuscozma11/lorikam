@@ -41,6 +41,16 @@ const Login = ({ setCurrentView }: Props) => {
             data-testid="password-input"
           />
         </div>
+        <div className="flex justify-end w-full mt-2">
+          <button
+            type="button"
+            onClick={() => setCurrentView(LOGIN_VIEW.FORGOT_PASSWORD)}
+            className="underline text-ui-fg-base text-small-regular"
+            data-testid="forgot-password-button"
+          >
+            Ai uitat parola?
+          </button>
+        </div>
         <ErrorMessage error={message} data-testid="login-error-message" />
         <SubmitButton data-testid="sign-in-button" className="w-full mt-6">
           Conectează-te

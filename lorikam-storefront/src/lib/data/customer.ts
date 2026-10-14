@@ -1,6 +1,12 @@
 "use server"
 
 import { sdk } from "@lib/config"
+import translateAuthError, {
+  MIN_PASSWORD_LENGTH,
+  RESET_LINK_INVALID,
+  type PasswordResetRequestState,
+  type PasswordResetState,
+} from "@lib/util/auth-error"
 import medusaError from "@lib/util/medusa-error"
 import { HttpTypes } from "@medusajs/types"
 import { revalidateTag } from "next/cache"
@@ -125,6 +131,107 @@ export async function login(_currentState: unknown, formData: FormData) {
   } catch (error: any) {
     return error.toString()
   }
+}
+
+/**
+ * Step 1 of "am uitat parola": ask the backend for a reset token, which the
+ * `auth.password_reset` subscriber turns into an email.
+ *
+ * The result is intentionally the same whether or not the address has an
+ * account. Medusa's reset-password route already answers 201 for an unknown
+ * identifier so it does not leak, and the few error shapes that *could* leak
+ * ("not found") are folded into success here so the storefront cannot become
+ * an oracle for which email addresses are registered.
+ */
+export async function requestPasswordReset(
+  _currentState: unknown,
+  formData: FormData
+): Promise<PasswordResetRequestState> {
+  const email = ((formData.get("email") as string) ?? "").trim()
+
+  if (!email) {
+    return {
+      success: false,
+      error: "Introdu adresa de email a contului tău.",
+    }
+  }
+
+  try {
+    await sdk.auth.resetPassword("customer", "emailpass", {
+      identifier: email,
+    })
+  } catch (error: any) {
+    // 404/401 here would mean "no such customer", which is precisely what we
+    // must not reveal. Everything else is a real failure worth reporting.
+    if (error?.status === 404 || error?.status === 401) {
+      return { success: true, error: null }
+    }
+
+    console.error("requestPasswordReset failed:", error?.message ?? error)
+
+    return {
+      success: false,
+      error: translateAuthError(error, "reset-request"),
+    }
+  }
+
+  return { success: true, error: null }
+}
+
+/**
+ * Step 2 of "am uitat parola": set the new password using the token from the
+ * email. The token is a short-lived JWT that the backend accepts once, and it
+ * travels as a Bearer header rather than in the body — `sdk.auth.updateProvider`
+ * takes it as its fourth argument and does that for us.
+ *
+ * No session is created on success: the customer is sent to the login form and
+ * signs in with the new password, which also proves it is the one they meant.
+ */
+export async function resetPassword(
+  _currentState: unknown,
+  formData: FormData
+): Promise<PasswordResetState> {
+  const token = ((formData.get("token") as string) ?? "").trim()
+  const password = (formData.get("password") as string) ?? ""
+  const confirmPassword = (formData.get("confirm_password") as string) ?? ""
+
+  if (!token) {
+    return { success: false, error: RESET_LINK_INVALID, invalidToken: true }
+  }
+
+  // Re-checked here and not only in the browser: the form posts to a Server
+  // Action, so client-side validation is a convenience, not a guarantee.
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return {
+      success: false,
+      error: `Parola trebuie să aibă cel puțin ${MIN_PASSWORD_LENGTH} caractere.`,
+      invalidToken: false,
+    }
+  }
+
+  if (password !== confirmPassword) {
+    return {
+      success: false,
+      error: "Cele două parole nu coincid.",
+      invalidToken: false,
+    }
+  }
+
+  try {
+    await sdk.auth.updateProvider("customer", "emailpass", { password }, token)
+  } catch (error: any) {
+    console.error("resetPassword failed:", error?.message ?? error)
+
+    const message = translateAuthError(error, "reset-update")
+
+    return {
+      success: false,
+      error: message,
+      invalidToken: message === RESET_LINK_INVALID,
+    }
+  }
+
+  return { success: true, error: null, invalidToken: false }
 }
 
 export async function signout(countryCode: string) {
