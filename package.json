@@ -1,0 +1,25 @@
+{
+  "name": "lorikam-infra",
+  "private": true,
+  "description": "Railway infrastructure-as-code + deploy scripts for Lorikam. The apps have their own package.json and Yarn 4 lockfile: lorikam/ (Medusa backend, deployed here to Railway) and lorikam-storefront/ (Next.js, deployed to Vercel). The only dependency is the railway SDK, which .railway/railway.ts imports.",
+  "scripts": {
+    "bootstrap": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/railway-bootstrap.ps1",
+    "setup:store": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/railway-setup-store.ps1",
+    "railway": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/railway.ps1",
+    "plan": "npm run railway -- config plan --verbose",
+    "deploy": "npm run railway -- config apply",
+    "deploy:ci": "npm run railway -- config apply --yes",
+    "redeploy": "npm run railway -- redeploy --service backend --yes --from-source",
+    "logs": "npm run railway -- logs --service backend --deployment",
+    "logs:build": "npm run railway -- logs --service backend --build",
+    "status": "npm run railway -- status",
+    "vars": "npm run railway -- variables list --service backend",
+    "shell": "npm run railway -- ssh --service backend",
+    "migrate": "npm run railway -- ssh --service backend -- sh -lc \"yarn medusa db:migrate\"",
+    "domain": "npm run railway -- domain status api.lorikam.ro --service backend",
+    "db": "npm run railway -- connect postgres"
+  },
+  "devDependencies": {
+    "railway": "^3.11.0"
+  }
+}

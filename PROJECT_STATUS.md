@@ -54,16 +54,15 @@ Market: **Romania + Europe**, currency **RON**, language **Romanian**.
 
 ### 1. Backend production config — _needs keys/decisions, then env-only_
 - [x] **Notification provider** (order emails) — Resend module (`src/modules/resend-notification`) + `order.placed` subscriber done. Set `RESEND_API_KEY` + `RESEND_FROM` in prod env (dev falls back to local console provider).
-- [ ] **File storage** — confirm deploy target; if multi-instance, add `@medusajs/file-s3` (R2/S3) + keys. Single host w/ persistent volume is OK as-is.
+- [x] **File storage** — Railway volume mounted at `/app/static`, declared in `.railway/railway.ts`. Single instance, so `file-local` is fine; move to `@medusajs/file-s3` (R2/S3) only when scaling past one replica.
 - [ ] **Stripe** — live `STRIPE_API_KEY` + `STRIPE_WEBHOOK_SECRET` in prod env.
 - [ ] **Secrets** — generate strong `JWT_SECRET` + `COOKIE_SECRET` (`openssl rand -base64 48`).
 - [ ] **CORS** — set real prod domains in `STORE_CORS` / `ADMIN_CORS` / `AUTH_CORS`.
 
 ### 2. Deployment
-- [ ] Choose host (Railway / VPS+Coolify / Render+Vercel).
-- [ ] `npx medusa db:migrate` on prod.
-- [ ] `npx medusa exec ./src/scripts/seed-variant-presets.ts` (seed croi/size defaults).
-- [ ] Create admin user: `npx medusa user -e <email> -p <pass>`.
+- [x] **Host chosen: Railway** (backend + Postgres + Redis) and **Vercel** (storefront). Infrastructure is code — `.railway/railway.ts`; runbook in `DEPLOY.md`.
+- [x] `db:migrate` on prod — automated as Railway's `preDeploy` step, runs once per deploy.
+- [ ] Seeds + admin user — automated via `npm run setup:store` (croi/size presets, shipping, tax, admin user); needs a live backend first.
 - [ ] Configure store in admin: currency RON, regions (Romania + Europe), sales channel, **publishable key → storefront `.env.local`**, stock location.
 - [ ] Storefront env: `MEDUSA_BACKEND_URL`, `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY`, `NEXT_PUBLIC_BASE_URL`, `NEXT_PUBLIC_STRIPE_KEY`, `NEXT_PUBLIC_DEFAULT_REGION=ro`.
 - [ ] Domain + SSL for both apps.

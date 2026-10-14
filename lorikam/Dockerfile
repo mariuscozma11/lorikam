@@ -59,7 +59,11 @@ RUN corepack enable \
 
 EXPOSE 9000
 
-# Run module + core migrations, then start the server.
-# (Single instance: migrating on start is fine. For multiple instances,
-#  run `yarn medusa db:migrate` as a separate one-off step instead.)
-CMD ["sh", "-c", "yarn medusa db:migrate && yarn medusa start"]
+# Migrations are NOT run here. Railway runs `yarn medusa db:migrate` as the
+# service's preDeploy step (see .railway/railway.ts), which runs it exactly
+# once per deploy instead of once per container — the latter races itself as
+# soon as there is more than one replica.
+#
+# Running this image anywhere else means migrating by hand first:
+#   docker run --rm <image> yarn medusa db:migrate
+CMD ["yarn", "medusa", "start"]

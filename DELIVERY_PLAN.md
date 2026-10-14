@@ -41,11 +41,11 @@ Cuprins:
 
 ## 2. CI/CD simplu cu open source
 
-**Scule:** GitHub Actions (gratuit) + Docker + Coolify/Dokploy (PaaS self-host, open source) sau Render.
+**Scule:** GitHub Actions (gratuit) + Docker + Railway (backend, infrastructure-as-code) + Vercel (storefront).
 
 ### Pipeline propus
 - **La PR / push**: lint + typecheck + build (ambele proiecte). Blochează merge dacă pică.
-- **La push pe `main`**: deploy automat (webhook către Coolify/Render).
+- **La push pe `main`**: deploy automat — Railway rebuildează backend-ul, Vercel storefront-ul.
 
 ### `.github/workflows/ci.yml` — **implementat** ✅
 Fișierul real e în repo (`.github/workflows/ci.yml`). Două joburi:
@@ -56,34 +56,38 @@ Detalii: Yarn 4 prin `corepack enable`; `concurrency` anulează rulările supras
 
 > **De ce nu `next build` în CI:** storefront-ul prerenderază pagini (categorii, produse) prin `generateStaticParams`, care cer date dintr-un backend Medusa live. Fără backend + date, build-ul pică la fetch. `yarn build` complet pe storefront se rulează în pasul de deploy, contra backendului real.
 
-### Deploy (cel mai simplu)
-- **Coolify/Dokploy**: conectezi repo-ul GitHub → auto-deploy la push pe `main`. Build via Dockerfile sau buildpack. Zero YAML de deploy.
-- **Render**: „Blueprint" `render.yaml`, auto-deploy la push.
-- **Railway**: conectezi repo → deploy automat.
+### Deploy — **implementat** ✅
+Backend-ul e descris în `.railway/railway.ts` (Railway infrastructure-as-code):
+Postgres, Redis, volum pentru imagini, serviciul `backend`, migrații ca pas
+`preDeploy`. Totul se aplică din terminal (`npm run plan` / `npm run deploy`),
+iar push-ul pe `main` declanșează rebuild automat. Pașii compleți: `DEPLOY.md`.
 
 ---
 
 ## 3. Unde hostăm — raport calitate/preț
 
-### Recomandare principală (cel mai bun preț/perf) — VPS + Coolify
+### Decis: Railway (backend) + Vercel (storefront)
 | Componentă | Soluție | Cost/lună |
 |-----------|---------|-----------|
-| Server | **Hetzner CX22** (2 vCPU, 4GB) cu **Coolify** | ~€4–5 |
-| Postgres | pe același VPS (container) sau **Neon** free | €0 |
-| Redis | pe VPS (opțional — momentan in-memory) | €0 |
+| Backend Medusa | **Railway** (Docker, regiune `europe-west4`) | ~$5–15 după uz |
+| Postgres | **Railway** (plugin, în același proiect) | incl. în uz |
+| Redis | **Railway** (plugin) | incl. în uz |
 | Storefront | **Vercel** (Hobby, gratuit) | €0 |
-| Fișiere | **Cloudflare R2** (egress gratuit) | ~€0 |
+| Fișiere | volum Railway montat la `/app/static` | incl. |
 | Email | **Resend** (3k/lună gratuit) | €0 |
-| **Total** | | **~€5/lună** |
+| **Total** | | **~$5–15/lună** |
 
-Coolify (open source) îți dă experiență tip Heroku pe serverul tău: deploy din GitHub, SSL automat (Let's Encrypt), backups, logs.
+De ce Railway și nu VPS + Coolify (~€5/lună, varianta evaluată anterior): zero
+mentenanță de server (fără patching, fără Let's Encrypt de administrat), iar
+întreaga infrastructură e versionată în repo ca `.railway/railway.ts` — se
+recreează dintr-o comandă. Diferența de cost e mică față de timpul de operare.
 
-### Alternativă „zero DevOps" — Railway / Render
-- **Railway**: backend + Postgres + Redis click-deploy, ~$10–25/lună. Cel mai puțin efort.
-- **Render**: backend (~$7) + Postgres (~$7) + storefront pe Vercel. ~$15/lună.
+> Facturarea e pe consum, nu pe instanță fixă. Verifică periodic în dashboard.
 
-### Verdict pentru Lorikam (B2B-first, volum online mic)
-**Hetzner + Coolify + Vercel + R2 + Resend ≈ €5/lună** = cel mai bun raport. Dacă vrei zero mentenanță și plătește clientul, **Railway**.
+### Ce rămâne manual
+- **Backups Postgres:** se activează din dashboard-ul Railway (nu e exprimabil în IaC).
+- **Domeniu custom:** adăugat din CLI, nu din IaC (Railway refuză înregistrarea de domenii din `config apply`).
+- **Fișiere la scară:** volumul e legat de un singur serviciu. La >1 replică, trecere pe `@medusajs/file-s3` (R2/S3).
 
 ---
 

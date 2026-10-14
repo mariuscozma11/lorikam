@@ -1,0 +1,12 @@
+# Root-level only. The two apps keep their own .gitignore.
+
+# Present only so the Railway CLI has a package.json to hang scripts off;
+# nothing is actually installed here.
+node_modules/
+package-lock.json
+
+# Third-party keys fed to scripts/railway-bootstrap.ps1. Never commit.
+.env.railway
+
+# Pinned plan artifacts from `railway config plan --out`.
+railway-plan.json
