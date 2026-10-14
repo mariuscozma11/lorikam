@@ -1,0 +1,31 @@
+# Vercel builds only the storefront (the project's Root Directory is
+# lorikam-storefront). Everything here is either irrelevant to that build or a
+# local artifact, and without this file the CLI uploads ~78MB per deploy.
+#
+# Note the deploy must be run from the REPO ROOT, not from inside
+# lorikam-storefront: the project's Root Directory is already
+# "lorikam-storefront", so deploying from within that folder makes Vercel look
+# for lorikam-storefront/lorikam-storefront and fail with
+# "The specified Root Directory ... does not exist".
+
+# The Medusa backend deploys to Railway, not here.
+lorikam/
+
+# Railway infrastructure-as-code and its wrapper scripts.
+.railway/
+scripts/
+railway-plan.json
+
+# Local build output and package-manager caches.
+**/.next/
+**/.yarn/cache/
+**/.yarn/install-state.gz
+**/node_modules/
+**/tsconfig.tsbuildinfo
+
+# Local env files - Vercel holds the real values as project env vars.
+**/.env.local
+.env.railway
+
+# Test and tooling leftovers.
+.playwright-mcp/

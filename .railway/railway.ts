@@ -137,7 +137,23 @@ export default defineRailway(() => {
       // nameservers at all), while lorikam.com is the domain the business
       // actually owns. Everything here was originally written against the .ro
       // name, which would never have resolved.
-      STORE_CORS: "https://lorikam.com,https://www.lorikam.com",
+      // localhost:8000 is the storefront's dev port (see its package.json).
+      // Kept here on purpose: without it the browser blocks every client-side
+      // call from a local storefront against this backend, which makes the one
+      // environment where the checkout can actually be rehearsed useless. It
+      // grants nothing to a third party - an attacker cannot make a visitor's
+      // browser treat their machine as localhost:8000.
+      // The Vercel production URL is listed alongside the final domains because
+      // the storefront is served from it until lorikam.com is pointed at
+      // Vercel. Without it the browser blocks every client-side call from the
+      // deployed storefront, which looks like a broken store rather than a
+      // CORS problem. Drop it once the custom domain is live.
+      STORE_CORS: [
+        "https://lorikam.com",
+        "https://www.lorikam.com",
+        "https://lorikam-mariuscozmabe-gmailcoms-projects.vercel.app",
+        "http://localhost:8000",
+      ].join(","),
       ADMIN_CORS: "https://api.lorikam.com",
       AUTH_CORS:
         "https://api.lorikam.com,https://lorikam.com,https://www.lorikam.com",
