@@ -13,7 +13,9 @@ export const convertToLocale = ({
   currency_code,
   minimumFractionDigits,
   maximumFractionDigits,
-  locale = "en-US",
+  // The store sells in Romania, so prices must read "229,00 RON" (comma decimals,
+  // dot thousands) rather than the "RON 229.00" that en-US produces.
+  locale = "ro-RO",
 }: ConvertToLocaleParams) => {
   return currency_code && !isEmpty(currency_code)
     ? new Intl.NumberFormat(locale, {

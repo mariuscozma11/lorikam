@@ -12,7 +12,8 @@ const Help = () => {
             <LocalizedClientLink href="/contact">Contact</LocalizedClientLink>
           </li>
           <li>
-            <LocalizedClientLink href="/contact">
+            {/* This pointed at /contact; the returns policy lives on /retururi */}
+            <LocalizedClientLink href="/retururi">
               Retururi și schimburi
             </LocalizedClientLink>
           </li>

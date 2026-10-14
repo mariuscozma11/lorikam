@@ -219,6 +219,9 @@ const ShippingAddress = ({
           autoComplete="address-level1"
           value={formData["shipping_address.province"]}
           onChange={handleChange}
+          // The courier routes on județ, so a Romanian address is undeliverable
+          // without it.
+          required
           data-testid="shipping-province-input"
         />
       </div>
@@ -296,6 +299,9 @@ const ShippingAddress = ({
           autoComplete="tel"
           value={formData["shipping_address.phone"]}
           onChange={handleChange}
+          // Cargus can't deliver without a phone number, and the confirmation
+          // email only prints "Tel:" when one was collected.
+          required
           data-testid="shipping-phone-input"
         />
       </div>

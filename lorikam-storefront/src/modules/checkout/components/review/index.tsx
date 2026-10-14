@@ -4,6 +4,7 @@ import { Heading, Text, clx } from "@medusajs/ui"
 
 import PaymentButton from "../payment-button"
 import { useSearchParams } from "next/navigation"
+import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
 const Review = ({ cart }: { cart: any }) => {
   const searchParams = useSearchParams()
@@ -37,10 +38,29 @@ const Review = ({ cart }: { cart: any }) => {
         <>
           <div className="flex items-start gap-x-1 w-full mb-6">
             <div className="w-full">
+              {/* The customer can only "confirm they have read" these documents if
+                  they can actually open them, so each one is a link. */}
               <Text className="txt-medium-plus text-ui-fg-base mb-1">
                 Apăsând butonul Plasează comanda, confirmi că ai citit,
-                înțeles și acceptat Termenii și Condițiile, Politica de Vânzare
-                și Retur și că ai luat la cunoștință Politica de Confidențialitate.
+                înțeles și acceptat{" "}
+                <LocalizedClientLink
+                  href="/termeni-si-conditii"
+                  className="underline"
+                >
+                  Termenii și Condițiile
+                </LocalizedClientLink>
+                ,{" "}
+                <LocalizedClientLink href="/retururi" className="underline">
+                  Politica de Vânzare și Retur
+                </LocalizedClientLink>{" "}
+                și că ai luat la cunoștință{" "}
+                <LocalizedClientLink
+                  href="/politica-de-confidentialitate"
+                  className="underline"
+                >
+                  Politica de Confidențialitate
+                </LocalizedClientLink>
+                .
               </Text>
             </div>
           </div>

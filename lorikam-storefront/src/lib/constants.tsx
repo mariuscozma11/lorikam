@@ -11,11 +11,11 @@ export const paymentInfoMap: Record<
   { title: string; icon: React.JSX.Element }
 > = {
   pp_stripe_stripe: {
-    title: "Credit card",
+    title: "Card bancar",
     icon: <CreditCard />,
   },
   "pp_medusa-payments_default": {
-    title: "Credit card",
+    title: "Card bancar",
     icon: <CreditCard />,
   },
   "pp_stripe-ideal_stripe": {
@@ -31,7 +31,9 @@ export const paymentInfoMap: Record<
     icon: <PayPal />,
   },
   pp_system_default: {
-    title: "Manual Payment",
+    // The system provider only authorizes the order, it never collects money, so
+    // the label has to say that instead of implying the customer paid.
+    title: "Plată manuală (fără încasare online)",
     icon: <CreditCard />,
   },
   // Add more payment providers here

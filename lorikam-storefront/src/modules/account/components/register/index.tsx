@@ -71,14 +71,14 @@ const Register = ({ setCurrentView }: Props) => {
         <span className="text-center text-ui-fg-base text-small-regular mt-6">
           Prin crearea unui cont, ești de acord cu{" "}
           <LocalizedClientLink
-            href="/content/privacy-policy"
+            href="/politica-de-confidentialitate"
             className="underline"
           >
             Politica de confidențialitate
           </LocalizedClientLink>{" "}
           și{" "}
           <LocalizedClientLink
-            href="/content/terms-of-use"
+            href="/termeni-si-conditii"
             className="underline"
           >
             Termenii de utilizare
