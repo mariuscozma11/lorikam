@@ -83,6 +83,16 @@ const redisInfraModules = process.env.REDIS_URL
             // without letting the queue grow without bound.
             removeOnComplete: { age: 3600, count: 1000 },
             removeOnFail: { age: 3600, count: 1000 },
+
+            // Without this, BullMQ defaults to attempts: 1 - a subscriber that
+            // throws fails its job once and is never retried, which makes
+            // putting the event bus on Redis pointless for the thing it was
+            // meant to fix. The subscribers classify send failures and only
+            // rethrow retryable ones (a 429, a 5xx, a dropped connection), so
+            // a permanent error such as an unverified sender still fails fast
+            // instead of being attempted three times.
+            attempts: 3,
+            backoff: { type: "exponential", delay: 10000 },
           },
         },
       },

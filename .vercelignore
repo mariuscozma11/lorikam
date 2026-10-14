@@ -7,25 +7,35 @@
 # "lorikam-storefront", so deploying from within that folder makes Vercel look
 # for lorikam-storefront/lorikam-storefront and fail with
 # "The specified Root Directory ... does not exist".
+#
+# EVERY DIRECTORY PATTERN HERE IS ANCHORED WITH A LEADING SLASH, ON PURPOSE.
+# These are gitignore-style patterns: an unanchored "lorikam/" matches a
+# directory with that name at ANY depth. The first version of this file used
+# exactly that, and silently deleted
+#   lorikam-storefront/src/app/[countryCode]/(main)/lorikam/   (the route)
+#   lorikam-storefront/src/modules/lorikam/                    (its components)
+# from the upload. The build still succeeded - the route was simply absent from
+# the output - and /ro/lorikam returned 404 in production while the homepage
+# kept linking to it.
 
 # The Medusa backend deploys to Railway, not here.
-lorikam/
+/lorikam/
 
 # Railway infrastructure-as-code and its wrapper scripts.
-.railway/
-scripts/
-railway-plan.json
+/.railway/
+/scripts/
+/railway-plan.json
 
 # Local build output and package-manager caches.
-**/.next/
-**/.yarn/cache/
-**/.yarn/install-state.gz
-**/node_modules/
-**/tsconfig.tsbuildinfo
+.next/
+.yarn/cache/
+.yarn/install-state.gz
+node_modules/
+tsconfig.tsbuildinfo
 
 # Local env files - Vercel holds the real values as project env vars.
-**/.env.local
-.env.railway
+.env.local
+/.env.railway
 
 # Test and tooling leftovers.
-.playwright-mcp/
+/.playwright-mcp/

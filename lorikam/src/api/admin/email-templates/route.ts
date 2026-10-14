@@ -60,6 +60,20 @@ const TEMPLATE_META = [
       "Către adresa firmei (Setări site → Email contact) când cineva scrie din formularul de contact.",
     variables: ["name", "email"],
   },
+  {
+    id: "password-reset",
+    name: "Resetare parolă",
+    description:
+      "Către client când cere o parolă nouă din pagina de autentificare (eveniment auth.password_reset). Linkul de resetare este generat automat și nu poate fi editat de aici.",
+    variables: ["email", "contact_email"],
+  },
+  {
+    id: "order-placed-merchant",
+    name: "Comandă nouă (intern)",
+    description:
+      "Către adresa firmei (Setări site → Email contact) la fiecare comandă nouă: date de contact, livrare, produse și personalizări.",
+    variables: ["display_id", "customer_name", "order_total"],
+  },
 ] as const
 
 export const GET = async (

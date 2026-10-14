@@ -113,6 +113,26 @@ export const EDITABLE_FIELDS = {
     intro: "",
     outro: "",
   },
+  // No {{customer_name}} anywhere in this one on purpose: the password reset
+  // event carries only an identifier, and for an admin user there is no
+  // customer record at all — a greeting would come out as "Salut ,".
+  "password-reset": {
+    subject: "Resetare parolă — Lorikam",
+    heading: "Resetează-ți parola",
+    intro:
+      "Am primit o cerere de resetare a parolei pentru contul asociat adresei <strong>{{email}}</strong>. Apasă butonul de mai jos ca să îți alegi o parolă nouă.",
+    outro:
+      "Dacă nu ai cerut tu resetarea, ignoră acest email — parola rămâne neschimbată. Pentru orice nelămurire scrie-ne la {{contact_email}}.",
+  },
+  // Internal email, so the copy is deliberately terse: it is read on a phone
+  // between orders, not browsed. The subject carries everything needed to
+  // triage without opening the message.
+  "order-placed-merchant": {
+    subject: "Comandă nouă #{{display_id}} — {{order_total}}",
+    heading: "Comandă nouă #{{display_id}}",
+    intro: "",
+    outro: "",
+  },
 } as const
 
 export type EmailOverrides = Record<string, string | null | undefined>
@@ -134,6 +154,28 @@ function applyVars(text: string, vars: Record<string, string | number>) {
 function contactAddress(overrides: EmailOverrides | undefined) {
   const configured = (overrides?.["company_email"] || "").trim()
   return configured || DEFAULT_CONTACT_EMAIL
+}
+
+/**
+ * Where internal (merchant-facing) mail goes.
+ *
+ * Same settings and same precedence idea as the provider's reply-to in
+ * `service.ts`, only the other way round: that one asks "where should a
+ * customer's Reply land", this one asks "which inbox does the shop actually
+ * read". `company_email` is the address the client typed into Setări site →
+ * Email contact and is already where the contact form delivers, so order
+ * alerts land in the same place instead of a second, forgotten inbox.
+ * `email_reply_to` is the next best guess, because it is by definition an
+ * address a human monitors. The constant is last and only exists so an
+ * unconfigured store still mails somebody rather than dropping the alert.
+ */
+export function merchantRecipient(
+  overrides: EmailOverrides | undefined
+): string {
+  const pick = (key: string) => (overrides?.[key] || "").trim()
+  return (
+    pick("company_email") || pick("email_reply_to") || DEFAULT_CONTACT_EMAIL
+  )
 }
 
 function copy(
@@ -368,6 +410,225 @@ function customerWelcome(data: any): EmailContent {
   }
 }
 
+function passwordReset(data: any): EmailContent {
+  const overrides: EmailOverrides | undefined = data?.overrides
+  const contactEmail = contactAddress(overrides)
+  // The subscriber builds the URL, because only it knows whether this is a
+  // customer (storefront) or an admin user (admin panel).
+  const resetUrl = String(data?.reset_url ?? "")
+  const isAdmin = data?.actor_type === "user"
+
+  // Two var sets, because `copy()` feeds both an HTML body and a plain-text
+  // subject. Escaping once up front would put a literal "&#39;" in the inbox
+  // subject line; not escaping at all would put customer-supplied text
+  // straight into the markup. So: raw for the subject, escaped for the body.
+  const textVars = {
+    email: String(data?.email ?? ""),
+    contact_email: contactEmail,
+  }
+  const vars = {
+    email: escapeHtml(textVars.email),
+    contact_email: contactEmail,
+  }
+
+  const body = `
+    <h1 style="margin:0 0 8px;font-size:22px;">${copy("password-reset", "heading", overrides, vars)}</h1>
+    <p style="margin:0 0 24px;color:#52525b;font-size:15px;line-height:1.6;">
+      ${copy("password-reset", "intro", overrides, vars)}
+    </p>
+    ${
+      isAdmin
+        ? `<p style="margin:0 0 24px;color:#52525b;font-size:15px;">Linkul duce către panoul de administrare, nu către magazin.</p>`
+        : ""
+    }
+    <p style="margin:0 0 24px;">
+      <a href="${escapeHtml(resetUrl)}" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 28px;border-radius:8px;">Setează o parolă nouă</a>
+    </p>
+    <p style="margin:0 0 24px;color:#71717a;font-size:13px;line-height:1.6;">
+      Dacă butonul nu funcționează, copiază linkul acesta în browser:<br/>
+      <span style="word-break:break-all;color:#52525b;">${escapeHtml(resetUrl)}</span>
+    </p>
+    <p style="margin:0 0 24px;color:#52525b;font-size:15px;">
+      Linkul poate fi folosit o singură dată și expiră după un timp scurt. Dacă a expirat, cere o resetare nouă.
+    </p>
+    ${
+      copy("password-reset", "outro", overrides, vars)
+        ? `<p style="margin:24px 0 0;color:#52525b;font-size:15px;line-height:1.6;">${copy("password-reset", "outro", overrides, vars)}</p>`
+        : ""
+    }
+  `
+
+  return {
+    subject: copy("password-reset", "subject", overrides, textVars),
+    html: layout("Resetare parolă", body, contactEmail),
+  }
+}
+
+// The shop's own copy of an incoming order. Everything in here is operational:
+// who ordered, what to produce (personalisations included), how it ships and
+// where to. Without it a new order is invisible until somebody happens to open
+// the admin, which for a store this size means orders sitting unnoticed.
+//
+// Every interpolated value is escaped. Unlike the customer confirmation, this
+// email contains fields a stranger typed — the personalisation inputs, the
+// address, the name — and they reach the one inbox the shop definitely opens.
+function orderPlacedMerchant(data: any): EmailContent {
+  const order = data?.order ?? data ?? {}
+  const overrides: EmailOverrides | undefined = data?.overrides
+  const currency = order.currency_code || "ron"
+  const displayId = order.display_id ?? order.id ?? ""
+  const addr = order.shipping_address ?? {}
+  const customerName =
+    [addr.first_name, addr.last_name].filter(Boolean).join(" ") ||
+    [order.customer?.first_name, order.customer?.last_name]
+      .filter(Boolean)
+      .join(" ") ||
+    "—"
+
+  // Raw for the subject line, escaped for the body — see passwordReset() for
+  // why the two cannot be the same object.
+  const textVars = {
+    display_id: displayId,
+    customer_name: customerName,
+    order_total: formatPrice(order.total ?? 0, currency),
+  }
+  const vars = {
+    ...textVars,
+    customer_name: escapeHtml(customerName),
+  }
+
+  // Same rule the storefront uses (see lib/util/customization-label.ts): the
+  // line item stores the original labels next to the slugged keys, because
+  // prettifying "numar_tricou" loses the diacritics in "Număr tricou".
+  const customizationLabel = (
+    key: string,
+    labels: Record<string, string> | undefined
+  ) =>
+    labels?.[key] ||
+    key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+
+  const items: any[] = Array.isArray(order.items) ? order.items : []
+  const itemRows = items
+    .map((item) => {
+      const title = item.product_title || item.title || "Produs"
+      const variant = item.variant_title || item.subtitle || ""
+      const qty = item.quantity ?? 1
+      const unit = item.unit_price ?? 0
+      const customizations = (item.metadata?.customizations ?? {}) as Record<
+        string,
+        string
+      >
+      const labels = item.metadata?.customization_labels as
+        | Record<string, string>
+        | undefined
+      // Highlighted rather than listed with the variant: this is the part that
+      // gets printed or embroidered, and getting it wrong means redoing the
+      // product, so it has to be impossible to skim past.
+      const personalisation = Object.entries(customizations)
+        .filter(([, value]) => value !== null && value !== undefined && value !== "")
+        .map(
+          ([key, value]) =>
+            `<div style="font-size:13px;color:#18181b;"><span style="color:#71717a;">${escapeHtml(customizationLabel(key, labels))}:</span> <strong>${escapeHtml(value)}</strong></div>`
+        )
+        .join("")
+
+      return `<tr>
+        <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
+          <div style="font-weight:600;">${escapeHtml(title)}</div>
+          ${variant ? `<div style="color:#71717a;font-size:13px;">${escapeHtml(variant)}</div>` : ""}
+          ${personalisation ? `<div style="margin-top:6px;padding:8px 10px;background:#fafafa;border-left:3px solid #18181b;">${personalisation}</div>` : ""}
+        </td>
+        <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;text-align:center;color:#52525b;vertical-align:top;">${escapeHtml(qty)}</td>
+        <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;text-align:right;vertical-align:top;">${formatPrice(unit * qty, currency)}</td>
+      </tr>`
+    })
+    .join("")
+
+  const shippingMethods: any[] = Array.isArray(order.shipping_methods)
+    ? order.shipping_methods
+    : []
+  const shippingLine =
+    shippingMethods
+      .map((m) =>
+        [
+          escapeHtml(m?.name || "Livrare"),
+          m?.amount != null ? `(${formatPrice(m.amount, currency)})` : "",
+        ]
+          .filter(Boolean)
+          .join(" ")
+      )
+      .join(", ") || "—"
+
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:4px 0;color:#71717a;width:140px;vertical-align:top;">${label}</td><td style="padding:4px 0;">${value}</td></tr>`
+
+  const phone = addr.phone || order.customer?.phone || ""
+  const addressLines = [
+    [addr.address_1, addr.address_2].filter(Boolean).join(", "),
+    [addr.postal_code, addr.city].filter(Boolean).join(" "),
+    addr.province || "",
+    addr.country_code ? String(addr.country_code).toUpperCase() : "",
+  ]
+    .filter(Boolean)
+    .map((line) => escapeHtml(line))
+    .join("<br/>")
+
+  const body = `
+    <h1 style="margin:0 0 16px;font-size:20px;">${copy("order-placed-merchant", "heading", overrides, vars)}</h1>
+    ${
+      copy("order-placed-merchant", "intro", overrides, vars)
+        ? `<p style="margin:0 0 20px;color:#52525b;font-size:15px;">${copy("order-placed-merchant", "intro", overrides, vars)}</p>`
+        : ""
+    }
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;margin-bottom:24px;">
+      ${row("Client", escapeHtml(customerName))}
+      ${row(
+        "Email",
+        order.email
+          ? `<a href="mailto:${escapeHtml(order.email)}" style="color:#18181b;">${escapeHtml(order.email)}</a>`
+          : "—"
+      )}
+      ${row(
+        "Telefon",
+        phone
+          ? `<a href="tel:${escapeHtml(String(phone).replace(/[^\d+]/g, ""))}" style="color:#18181b;">${escapeHtml(phone)}</a>`
+          : "—"
+      )}
+      ${row("Livrare", shippingLine)}
+      ${row("Adresă", addressLines || "—")}
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+      <thead>
+        <tr>
+          <th align="left" style="padding-bottom:8px;border-bottom:2px solid #18181b;font-size:13px;text-transform:uppercase;color:#71717a;">Produs</th>
+          <th align="center" style="padding-bottom:8px;border-bottom:2px solid #18181b;font-size:13px;text-transform:uppercase;color:#71717a;">Cant.</th>
+          <th align="right" style="padding-bottom:8px;border-bottom:2px solid #18181b;font-size:13px;text-transform:uppercase;color:#71717a;">Total</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="padding:8px 0 0;font-size:18px;font-weight:700;border-top:1px solid #e4e4e7;">Total comandă</td>
+        <td style="padding:8px 0 0;font-size:18px;font-weight:700;text-align:right;border-top:1px solid #e4e4e7;">${formatPrice(order.total ?? 0, currency)}</td>
+      </tr>
+    </table>
+    ${
+      copy("order-placed-merchant", "outro", overrides, vars)
+        ? `<p style="margin:24px 0 0;color:#52525b;font-size:15px;line-height:1.6;">${copy("order-placed-merchant", "outro", overrides, vars)}</p>`
+        : ""
+    }
+  `
+
+  return {
+    subject: copy("order-placed-merchant", "subject", overrides, textVars),
+    // No contact address passed, same as the contact-form email: this one is
+    // already going to the shop's own inbox, so pointing it at that inbox in
+    // the footer would be circular.
+    html: layout(`Comandă nouă #${displayId}`, body),
+  }
+}
+
 export const TEMPLATES = {
   ORDER_PLACED: "order-placed",
   ORDER_SHIPPED: "order-shipped",
@@ -375,6 +636,9 @@ export const TEMPLATES = {
   ORDER_CANCELED: "order-canceled",
   CUSTOMER_WELCOME: "customer-welcome",
   CONTACT: "contact-message",
+  PASSWORD_RESET: "password-reset",
+  // Second email on order.placed, to the shop rather than the customer.
+  ORDER_PLACED_MERCHANT: "order-placed-merchant",
 } as const
 
 export function renderEmail(template: string, data: any): EmailContent {
@@ -389,6 +653,10 @@ export function renderEmail(template: string, data: any): EmailContent {
       return customerWelcome(data)
     case TEMPLATES.CONTACT:
       return contactMessage(data)
+    case TEMPLATES.PASSWORD_RESET:
+      return passwordReset(data)
+    case TEMPLATES.ORDER_PLACED_MERCHANT:
+      return orderPlacedMerchant(data)
     default:
       return genericFallback(data)
   }

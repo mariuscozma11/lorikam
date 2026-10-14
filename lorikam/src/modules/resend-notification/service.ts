@@ -9,6 +9,7 @@ import {
 } from "@medusajs/framework/types"
 import { Resend } from "resend"
 import { renderEmail } from "./emails/templates"
+import { sendErrorCode } from "./emails/send-errors"
 
 type InjectedDependencies = {
   logger: Logger
@@ -105,8 +106,20 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
       })
 
       if (error) {
-        this.logger_.error(`Resend send failed: ${error.message}`)
-        throw new MedusaError(MedusaError.Types.UNEXPECTED_STATE, error.message)
+        // `error.name` is Resend's own error type (rate_limit_exceeded,
+        // validation_error, …) and is the only point in the stack where it is
+        // still visible — the notification module hands the caller a wrapped
+        // error. Tag the verdict onto the code so the subscriber can decide
+        // between letting the event-bus job retry and giving up loudly.
+        const code = sendErrorCode((error as any)?.name)
+        this.logger_.error(
+          `Resend send failed (${(error as any)?.name ?? "unknown"}/${code}): ${error.message}`
+        )
+        throw new MedusaError(
+          MedusaError.Types.UNEXPECTED_STATE,
+          error.message,
+          code
+        )
       }
 
       return { id: data?.id }

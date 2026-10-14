@@ -42,6 +42,35 @@ export const SAMPLES: Record<string, any> = {
       email: "ionut@example.ro",
     },
   },
+  // The merchant alert shows two things the customer emails never render — the
+  // chosen shipping method and the line-item personalisation — so its sample
+  // adds them instead of ORDER_SAMPLE growing fields the other previews would
+  // silently ignore.
+  "order-placed-merchant": {
+    order: {
+      ...ORDER_SAMPLE,
+      email: "ionut@example.ro",
+      shipping_methods: [{ name: "Curier rapid (Cargus)", amount: 25 }],
+      items: ORDER_SAMPLE.items.map((item) => ({
+        ...item,
+        metadata: {
+          customizations: { nume_tricou: "POPESCU", numar_tricou: "10" },
+          customization_labels: {
+            nume_tricou: "Nume tricou",
+            numar_tricou: "Număr tricou",
+          },
+        },
+      })),
+    },
+  },
+  "password-reset": {
+    email: "ionut@example.ro",
+    actor_type: "customer",
+    // Shape only — the real link is built by the subscriber from
+    // STOREFRONT_URL and the token on the event.
+    reset_url:
+      "https://lorikam.com/account/reset-password?token=eyJhbGciOi…&email=ionut%40example.ro",
+  },
   "contact-message": {
     contact: {
       name: "Maria Ionescu",

@@ -2,6 +2,7 @@ import { SubscriberArgs, type SubscriberConfig } from "@medusajs/framework"
 import { Modules } from "@medusajs/framework/utils"
 import { TEMPLATES } from "../modules/resend-notification/emails/templates"
 import { loadEmailOverrides } from "../modules/resend-notification/emails/load-overrides"
+import { isRetryableSendError } from "../modules/resend-notification/emails/send-errors"
 
 export default async function orderPlacedHandler({
   event: { data },
@@ -10,6 +11,10 @@ export default async function orderPlacedHandler({
   const logger = container.resolve("logger")
   const query = container.resolve("query")
   const notificationService = container.resolve(Modules.NOTIFICATION)
+
+  // Hoisted out of the try so the failure log can name the recipient — the
+  // first thing anyone needs when an email did not arrive.
+  let recipient: string | undefined
 
   try {
     const { data: orders } = await query.graph({
@@ -45,6 +50,8 @@ export default async function orderPlacedHandler({
       return
     }
 
+    recipient = order.email
+
     await notificationService.createNotifications({
       to: order.email,
       channel: "email",
@@ -54,7 +61,26 @@ export default async function orderPlacedHandler({
 
     logger.info(`order.placed: confirmation email queued for ${order.email}`)
   } catch (e: any) {
-    logger.error(`order.placed: failed to send confirmation — ${e?.message ?? e}`)
+    const message = e?.message ?? e
+
+    // Swallowing this used to mean a transient Resend 429 or 500 lost the
+    // order confirmation for good: the handler returned normally, so the
+    // event-bus job completed and nothing ever ran again. Rethrowing fails
+    // the job, which is what lets BullMQ retry it — only worth doing for
+    // failures a retry could actually fix.
+    if (isRetryableSendError(e)) {
+      logger.error(
+        `order.placed: failed to send confirmation to ${recipient ?? data.id}, retrying — ${message}`
+      )
+      throw e
+    }
+
+    // Permanent (unverified sender domain, rejected API key, bad address).
+    // Every retry would fail the same way, and this runs for every single
+    // order, so it stops here with a log line that names the cause.
+    logger.error(
+      `order.placed: confirmation permanently failed for ${recipient ?? data.id}, not retrying — ${message}`
+    )
   }
 }
 

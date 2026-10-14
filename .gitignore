@@ -10,3 +10,9 @@ package-lock.json
 
 # Pinned plan artifacts from `railway config plan --out`.
 railway-plan.json
+
+.vercel
+.env*
+
+# Playwright MCP snapshots from local testing.
+.playwright-mcp/

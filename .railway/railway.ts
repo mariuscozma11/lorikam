@@ -177,6 +177,16 @@ export default defineRailway(() => {
       // accept that images stay on the railway.app host until re-uploaded.
       BACKEND_PUBLIC_URL: "https://backend-production-c8c0.up.railway.app",
 
+      // Where the STOREFRONT lives, which is not this backend. Links inside an
+      // email cannot be relative, and the password-reset mail has to send the
+      // customer to a page that can actually take a new password -
+      // BACKEND_PUBLIC_URL would drop them on a JSON 404.
+      //
+      // Set to the Vercel production alias for now; it becomes lorikam.com (or
+      // whichever host the storefront ends up on) at cutover. Without this set,
+      // the reset link falls back to http://localhost:8000 and is useless.
+      STOREFRONT_URL: "https://lorikam.vercel.app",
+
       // Default sender. Can be overridden from the admin UI (Emailuri →
       // Expeditor) without a redeploy. The domain must be verified in Resend
       // or Resend answers 403 and no mail goes out at all.
