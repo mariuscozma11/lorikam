@@ -2,13 +2,16 @@
 
 import { isManual, isStripeLike } from "@lib/constants"
 import { placeOrder } from "@lib/data/cart"
+import translateCheckoutError from "@lib/util/checkout-error"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
 import { useElements, useStripe } from "@stripe/react-stripe-js"
 import React, { useState } from "react"
 import ErrorMessage from "../error-message"
 
-// Romanian translations for Stripe error messages
+// Romanian translations for Stripe error messages. Stripe itself is asked for
+// Romanian (Elements is created with locale "ro"), so this map is only a
+// fallback for anything that still arrives in English.
 const translateStripeError = (message: string | undefined): string => {
   if (!message) return "A apărut o eroare. Vă rugăm să încercați din nou."
 
@@ -28,7 +31,9 @@ const translateStripeError = (message: string | undefined): string => {
     "Your card is not supported.": "Cardul nu este suportat.",
   }
 
-  return translations[message] || message
+  // Never show the raw English string: anything unknown goes through the
+  // shared mapper, which falls back to a generic Romanian sentence.
+  return translations[message] || translateCheckoutError(message)
 }
 
 type PaymentButtonProps = {
@@ -80,13 +85,21 @@ const StripePaymentButton = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const onPaymentCompleted = async () => {
-    await placeOrder()
-      .catch((err) => {
-        setErrorMessage(err.message)
-      })
-      .finally(() => {
-        setSubmitting(false)
-      })
+    // placeOrder returns a Romanian message instead of throwing it — a thrown
+    // Server Action error reaches production as a generic English sentence, and
+    // this is the worst possible moment to lose the real reason. The catch is
+    // left only for a failed call (offline, action transport).
+    try {
+      const result = await placeOrder()
+
+      if (typeof result === "string") {
+        setErrorMessage(result)
+      }
+    } catch (err: any) {
+      setErrorMessage(translateCheckoutError(err?.message))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const stripe = useStripe()
@@ -182,13 +195,18 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const onPaymentCompleted = async () => {
-    await placeOrder()
-      .catch((err) => {
-        setErrorMessage(err.message)
-      })
-      .finally(() => {
-        setSubmitting(false)
-      })
+    // Same as above: the message is returned, not thrown.
+    try {
+      const result = await placeOrder()
+
+      if (typeof result === "string") {
+        setErrorMessage(result)
+      }
+    } catch (err: any) {
+      setErrorMessage(translateCheckoutError(err?.message))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handlePayment = () => {

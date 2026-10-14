@@ -161,10 +161,21 @@ export default defineRailway(() => {
       AUTH_CORS:
         "https://api.lorikam.com,https://lorikam.com,https://www.lorikam.com",
 
-      // Used to build public URLs for uploaded images. Must be the final
-      // custom domain, not *.up.railway.app — these URLs are persisted in the
-      // database, so they would rot if the domain changed later.
-      BACKEND_PUBLIC_URL: "https://api.lorikam.com",
+      // Used to build public URLs for uploaded images, and these URLs are
+      // PERSISTED IN THE DATABASE at upload time — whatever host is set here
+      // when an image is uploaded is baked into that product forever.
+      //
+      // Deliberately the Railway service domain rather than api.lorikam.com:
+      // the store is being populated with its real catalogue before the custom
+      // domain has DNS, and pointing this at a host that does not resolve would
+      // bake dead URLs into every uploaded image, forcing a full re-upload
+      // after cutover.
+      //
+      // This survives the cutover: Railway keeps the service domain alive
+      // alongside any custom domain, so images uploaded now keep working. Only
+      // switch this to https://api.lorikam.com once that domain resolves, and
+      // accept that images stay on the railway.app host until re-uploaded.
+      BACKEND_PUBLIC_URL: "https://backend-production-c8c0.up.railway.app",
 
       // Default sender. Can be overridden from the admin UI (Emailuri →
       // Expeditor) without a redeploy. The domain must be verified in Resend

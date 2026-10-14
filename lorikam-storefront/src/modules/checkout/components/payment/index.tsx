@@ -3,6 +3,7 @@
 import { RadioGroup } from "@headlessui/react"
 import { isStripeLike, paymentInfoMap } from "@lib/constants"
 import { initiatePaymentSession } from "@lib/data/cart"
+import translateCheckoutError from "@lib/util/checkout-error"
 import { CheckCircleSolid, CreditCard } from "@medusajs/icons"
 import { Button, Container, Heading, Text, clx } from "@medusajs/ui"
 import ErrorMessage from "@modules/checkout/components/error-message"
@@ -43,9 +44,20 @@ const Payment = ({
     setError(null)
     setSelectedPaymentMethod(method)
     if (isStripeLike(method)) {
-      await initiatePaymentSession(cart, {
-        provider_id: method,
-      })
+      // The action returns a message instead of throwing it — a thrown Server
+      // Action error reaches production as a generic English sentence. The
+      // catch is left only for a failed call (offline, action transport).
+      try {
+        const result = await initiatePaymentSession(cart, {
+          provider_id: method,
+        })
+
+        if (typeof result === "string") {
+          setError(result)
+        }
+      } catch (err: any) {
+        setError(translateCheckoutError(err?.message))
+      }
     }
   }
 
@@ -81,9 +93,16 @@ const Payment = ({
         activeSession?.provider_id === selectedPaymentMethod
 
       if (!checkActiveSession) {
-        await initiatePaymentSession(cart, {
+        const result = await initiatePaymentSession(cart, {
           provider_id: selectedPaymentMethod,
         })
+
+        // A returned message means the session could not be created, so don't
+        // move the customer on to a review step that cannot be paid.
+        if (typeof result === "string") {
+          setError(result)
+          return
+        }
       }
 
       if (!shouldInputCard) {
@@ -95,7 +114,7 @@ const Payment = ({
         )
       }
     } catch (err: any) {
-      setError(err.message)
+      setError(translateCheckoutError(err.message))
     } finally {
       setIsLoading(false)
     }
@@ -135,7 +154,9 @@ const Payment = ({
       </div>
       <div>
         <div className={isOpen ? "block" : "hidden"}>
-          {!paidByGiftcard && availablePaymentMethods?.length && (
+          {/* Compare against 0 instead of relying on `length` being truthy:
+              an empty list made React print a literal "0" on the page. */}
+          {!paidByGiftcard && (availablePaymentMethods?.length ?? 0) > 0 && (
             <>
               <RadioGroup
                 value={selectedPaymentMethod}
@@ -165,6 +186,20 @@ const Payment = ({
                 ))}
               </RadioGroup>
             </>
+          )}
+
+          {/* No provider linked to the region looks exactly like this, and the
+              continue button stays disabled — say so instead of showing an
+              empty step. */}
+          {!paidByGiftcard && (availablePaymentMethods?.length ?? 0) === 0 && (
+            <Text
+              className="txt-medium text-ui-fg-subtle"
+              data-testid="no-payment-methods-message"
+            >
+              Momentan nu putem afișa nicio metodă de plată pentru comanda ta.
+              Te rugăm să încerci din nou în câteva momente sau să ne contactezi
+              ca să finalizăm comanda împreună.
+            </Text>
           )}
 
           {paidByGiftcard && (

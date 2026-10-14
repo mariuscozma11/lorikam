@@ -2,7 +2,8 @@
 
 import { sdk } from "@lib/config"
 import compareAddresses from "@lib/util/compare-addresses"
-import medusaError from "@lib/util/medusa-error"
+import translateCheckoutError from "@lib/util/checkout-error"
+import medusaError, { medusaErrorMessage } from "@lib/util/medusa-error"
 import { HttpTypes } from "@medusajs/types"
 import { revalidateTag } from "next/cache"
 import { redirect } from "next/navigation"
@@ -221,6 +222,11 @@ export async function deleteLineItem(lineId: string) {
     .catch(medusaError)
 }
 
+/**
+ * Returns a Romanian error message on failure instead of throwing: a thrown
+ * Server Action error is redacted to one generic English sentence in production,
+ * so "out of stock" and "payment not authorized" would look identical.
+ */
 export async function setShippingMethod({
   cartId,
   shippingMethodId,
@@ -238,9 +244,13 @@ export async function setShippingMethod({
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
     })
-    .catch(medusaError)
+    .catch((e) => translateCheckoutError(medusaErrorMessage(e)))
 }
 
+/**
+ * Returns a Romanian error message on failure instead of throwing, for the same
+ * reason as `setShippingMethod` — callers check for a string result.
+ */
 export async function initiatePaymentSession(
   cart: HttpTypes.StoreCart,
   data: HttpTypes.StoreInitializePaymentSession
@@ -256,7 +266,7 @@ export async function initiatePaymentSession(
       revalidateTag(cartCacheTag)
       return resp
     })
-    .catch(medusaError)
+    .catch((e) => translateCheckoutError(medusaErrorMessage(e)))
 }
 
 export async function applyPromotions(codes: string[]) {
@@ -456,13 +466,16 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
 /**
  * Places an order for a cart. If no cart ID is provided, it will use the cart ID from the cookies.
  * @param cartId - optional - The ID of the cart to place an order for.
- * @returns The cart object if the order was successful, or null if not.
+ * @returns The cart object if the order was successful, or a Romanian error
+ * message if not. The message is returned rather than thrown because Next.js
+ * redacts errors thrown inside a Server Action in production — the customer
+ * would get one generic English sentence at the moment of paying.
  */
 export async function placeOrder(cartId?: string) {
   const id = cartId || (await getCartId())
 
   if (!id) {
-    throw new Error("No existing cart found when placing an order")
+    return translateCheckoutError("No existing cart found when placing an order")
   }
 
   const headers = {
@@ -476,7 +489,11 @@ export async function placeOrder(cartId?: string) {
       revalidateTag(cartCacheTag)
       return cartRes
     })
-    .catch(medusaError)
+    .catch((e) => translateCheckoutError(medusaErrorMessage(e)))
+
+  if (typeof cartRes === "string") {
+    return cartRes
+  }
 
   if (cartRes?.type === "order") {
     const countryCode =

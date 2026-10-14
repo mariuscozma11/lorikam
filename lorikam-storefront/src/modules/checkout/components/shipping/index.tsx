@@ -3,6 +3,7 @@
 import { Radio, RadioGroup } from "@headlessui/react"
 import { setShippingMethod } from "@lib/data/cart"
 import { calculatePriceForShippingOption } from "@lib/data/fulfillment"
+import translateCheckoutError from "@lib/util/checkout-error"
 import { convertToLocale } from "@lib/util/money"
 import { CheckCircleSolid, Loader } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
@@ -157,15 +158,27 @@ const Shipping: React.FC<ShippingProps> = ({
       return id
     })
 
-    await setShippingMethod({ cartId: cart.id, shippingMethodId: id })
-      .catch((err) => {
+    // The action returns a message instead of throwing it — a thrown Server
+    // Action error reaches production as a generic English sentence. The catch
+    // is left only for a failed call (offline, action transport).
+    try {
+      const message = await setShippingMethod({
+        cartId: cart.id,
+        shippingMethodId: id,
+      })
+
+      if (typeof message === "string") {
         setShippingMethodId(currentId)
 
-        setError(err.message)
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
+        setError(message)
+      }
+    } catch (err: any) {
+      setShippingMethodId(currentId)
+
+      setError(translateCheckoutError(err?.message))
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   useEffect(() => {

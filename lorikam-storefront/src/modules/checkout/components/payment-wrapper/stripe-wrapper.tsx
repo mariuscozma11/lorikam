@@ -22,6 +22,9 @@ const StripeWrapper: React.FC<StripeWrapperProps> = ({
 }) => {
   const options: StripeElementsOptions = {
     clientSecret: paymentSession!.data?.client_secret as string | undefined,
+    // Without a locale Stripe follows the browser, so a customer could get
+    // English card and decline messages on a Romanian checkout.
+    locale: "ro",
   }
 
   if (!stripeKey) {
