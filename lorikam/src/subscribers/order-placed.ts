@@ -40,7 +40,27 @@ export default async function orderPlacedHandler({
       filters: { id: data.id },
     })
 
+    // The order's own totals have to be fetched on their own.
+    //
+    // query.graph miscomputes a parent's money fields when the same call also
+    // asks for a money field on a relation. Measured on order #5 (real total 254
+    // RON): asking for `items.unit_price` alongside `total` returns total = 25
+    // — the shipping total — and tax_total = 4.34, the VAT on shipping alone.
+    // Asking for `shipping_methods.amount` instead returns 259.25. Dropping
+    // the nested money field returns the correct 254 / 44.08.
+    //
+    // This is why the confirmation email told customers their total was 0.00
+    // (before formatPrice was fixed) and then 25.00: the number was wrong at
+    // the source, not in the rendering.
+    const { data: totalsRows } = await query.graph({
+      entity: "order",
+      fields: ["id", "total", "tax_total", "shipping_total"],
+      filters: { id: data.id },
+    })
+
     const order = orders?.[0]
+      ? { ...orders[0], ...(totalsRows?.[0] ?? {}) }
+      : undefined
     if (!order) {
       logger.error(`order.placed: order ${data.id} not found`)
       return

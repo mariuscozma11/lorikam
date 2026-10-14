@@ -67,7 +67,20 @@ export default async function orderPlacedMerchantHandler({
     filters: { id: data.id },
   })
 
+  // Same correction as order-placed.ts: query.graph miscomputes the order's
+  // totals when the same call asks for a money field on a relation, and this
+  // query asks for both items.unit_price and shipping_methods.amount. Without
+  // this second query the alert's subject line quoted the shipping total as
+  // the order total.
+  const { data: totalsRows } = await query.graph({
+    entity: "order",
+    fields: ["id", "total", "tax_total", "shipping_total"],
+    filters: { id: data.id },
+  })
+
   const order = orders?.[0]
+    ? { ...orders[0], ...(totalsRows?.[0] ?? {}) }
+    : undefined
   if (!order) {
     // Nothing to retry against: either the id is wrong or the order is gone.
     logger.error(`order.placed (merchant): order ${data.id} not found`)
