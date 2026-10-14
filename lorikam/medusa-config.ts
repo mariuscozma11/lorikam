@@ -36,6 +36,17 @@ const stripeProviders = process.env.STRIPE_API_KEY
         options: {
           apiKey: process.env.STRIPE_API_KEY,
           webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+          // Automatic capture. The default (false) uses Stripe's manual
+          // capture: the PaymentIntent stops at `requires_capture`, the order
+          // lands as `authorized`, and somebody has to press Capture in admin
+          // for every single order. Stripe releases an uncaptured
+          // authorization after about 7 days, so one missed click means the
+          // money is never collected and the customer's hold just disappears.
+          //
+          // The trade-off: with capture on, a cart that fails to complete
+          // after the charge needs a refund instead of a free authorization
+          // void. That is the better problem to have for a small store.
+          capture: true,
         },
       },
     ]
