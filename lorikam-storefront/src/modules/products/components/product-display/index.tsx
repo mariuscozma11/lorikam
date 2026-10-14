@@ -10,7 +10,7 @@ import { useSearchParams } from "next/navigation"
 type ProductDisplayProps = {
   product: HttpTypes.StoreProduct
   region: HttpTypes.StoreRegion
-  children?: ReactNode // For server components like ProductOnboardingCta
+  children?: ReactNode // Optional slot rendered between the info and the actions
 }
 
 export default function ProductDisplay({ product, region, children }: ProductDisplayProps) {

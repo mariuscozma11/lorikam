@@ -7,6 +7,22 @@ const requiredEnvs = [
     description:
       "Learn how to create a publishable key: https://docs.medusajs.com/v2/resources/storefront-development/publishable-api-keys",
   },
+  {
+    // src/lib/config.ts silently falls back to http://localhost:9000, so a
+    // missing value doesn't fail the build — it just ships a storefront that
+    // can't reach the backend (and next.config.js then allows no backend
+    // image host either). Better to stop here than to find out in production.
+    key: "MEDUSA_BACKEND_URL",
+    description:
+      'Public URL of the Medusa backend, e.g. "https://api.lorikam.com" (no trailing slash).',
+  },
+  {
+    // src/lib/util/env.ts falls back to https://localhost:8000, which ends up
+    // baked into canonicals, OG tags, metadataBase and the sitemap.
+    key: "NEXT_PUBLIC_BASE_URL",
+    description:
+      'Public URL of this storefront, e.g. "https://lorikam.com" (no trailing slash).',
+  },
 ]
 
 function checkEnvVariables() {

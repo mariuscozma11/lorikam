@@ -1,47 +1,18 @@
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
 
-import { getCollectionByHandle, listCollections } from "@lib/data/collections"
-import { listRegions } from "@lib/data/regions"
-import { StoreCollection, StoreRegion } from "@medusajs/types"
+import { getCollectionByHandle } from "@lib/data/collections"
+import { StoreCollection } from "@medusajs/types"
 import CollectionTemplate from "@modules/collections/templates"
 
 type Props = {
   params: Promise<{ handle: string; countryCode: string }>
 }
 
-export async function generateStaticParams() {
-  const { collections } = await listCollections({
-    fields: "*products",
-  })
-
-  if (!collections) {
-    return []
-  }
-
-  const countryCodes = await listRegions().then(
-    (regions: StoreRegion[]) =>
-      regions
-        ?.map((r) => r.countries?.map((c) => c.iso_2))
-        .flat()
-        .filter(Boolean) as string[]
-  )
-
-  const collectionHandles = collections.map(
-    (collection: StoreCollection) => collection.handle
-  )
-
-  const staticParams = countryCodes
-    ?.map((countryCode: string) =>
-      collectionHandles.map((handle: string | undefined) => ({
-        countryCode,
-        handle,
-      }))
-    )
-    .flat()
-
-  return staticParams
-}
+// No generateStaticParams here on purpose: the (main) layout reads cookies
+// (customer + cart), so every route in this group renders dynamically anyway.
+// Prerendering handles bought us nothing at serve time and only made the
+// build fail whenever the backend was unreachable.
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params

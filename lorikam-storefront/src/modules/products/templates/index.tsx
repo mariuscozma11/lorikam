@@ -1,7 +1,6 @@
 import React, { Suspense } from "react"
 
 import ProductActions from "@modules/products/components/product-actions"
-import ProductOnboardingCta from "@modules/products/components/product-onboarding-cta"
 import RelatedProducts from "@modules/products/components/related-products"
 import ProductInfo from "@modules/products/templates/product-info"
 import ProductDisplay from "@modules/products/components/product-display"
@@ -42,9 +41,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
           ]}
           className="mb-6"
         />
-        <ProductDisplay product={product} region={region}>
-          <ProductOnboardingCta />
-        </ProductDisplay>
+        <ProductDisplay product={product} region={region} />
 
         {/* Description Section */}
         {product.description && (

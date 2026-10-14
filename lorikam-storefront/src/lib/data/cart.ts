@@ -520,7 +520,9 @@ export async function updateRegion(countryCode: string, currentPath: string) {
   redirect(`/${countryCode}${currentPath}`)
 }
 
-export async function listCartOptions() {
+export async function listCartOptions(): Promise<{
+  shipping_options: HttpTypes.StoreCartShippingOption[]
+}> {
   const cartId = await getCartId()
   const headers = {
     ...(await getAuthHeaders()),
@@ -529,12 +531,24 @@ export async function listCartOptions() {
     ...(await getCacheOptions("shippingOptions")),
   }
 
-  return await sdk.client.fetch<{
-    shipping_options: HttpTypes.StoreCartShippingOption[]
-  }>("/store/shipping-options", {
-    query: { cart_id: cartId },
-    next,
-    headers,
-    cache: "force-cache",
-  })
+  // The (main) layout calls this on every request that has a cart cookie, only
+  // to feed the free-shipping nudge. A failing /store/shipping-options must not
+  // take down every page in the group, so degrade to "no options known".
+  try {
+    return await sdk.client.fetch<{
+      shipping_options: HttpTypes.StoreCartShippingOption[]
+    }>("/store/shipping-options", {
+      query: { cart_id: cartId },
+      next,
+      headers,
+      cache: "force-cache",
+    })
+  } catch (error) {
+    console.error(
+      `Failed to list shipping options for cart ${cartId}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }.`
+    )
+    return { shipping_options: [] }
+  }
 }

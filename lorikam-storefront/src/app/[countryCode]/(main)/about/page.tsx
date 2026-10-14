@@ -92,8 +92,10 @@ export default async function AboutPage() {
             Povestea noastră
           </h2>
           <p className="text-ui-fg-subtle leading-relaxed">
-            [Spune pe scurt povestea Lorikam: cum a început, ce vă motivează și ce
-            vă diferențiază. Acest text poate fi înlocuit oricând.]
+            Lorikam Sport SRL este o companie românească de articole sportive din
+            Timișoara. Producem echipamente personalizate pentru echipe și
+            articole de fan-shop, de la tricouri de joc la ținute de
+            antrenament.
           </p>
           <p className="text-ui-fg-subtle leading-relaxed">
             Lucrăm cot la cot cu echipele partenere pentru a livra echipamente

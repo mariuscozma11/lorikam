@@ -3,60 +3,91 @@ import { NextRequest, NextResponse } from "next/server"
 
 const BACKEND_URL = process.env.MEDUSA_BACKEND_URL
 const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
-const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "us"
+const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "ro"
 
 const regionMapCache = {
   regionMap: new Map<string, HttpTypes.StoreRegion>(),
   regionMapUpdated: Date.now(),
 }
 
+/**
+ * Loads the country-code -> region map, and NEVER throws.
+ *
+ * This runs on every request that matches the matcher below, which is every
+ * HTML route plus /robots.txt and /sitemap.xml. An exception escaping here
+ * leaves middleware() rejecting, which Vercel reports as
+ * MIDDLEWARE_INVOCATION_FAILED - a 500 on the entire site, with no error page
+ * reachable because middleware runs before rendering. A backend cold start, a
+ * 502, a DNS blip or a wrong publishable key (the backend answers 400) would
+ * each take the whole storefront down.
+ *
+ * So every failure is swallowed and the cache is returned as-is. A stale map
+ * always beats an error: regions change rarely, and serving yesterday's map is
+ * invisible to shoppers, while a 500 is not. The map is only empty on the very
+ * first request after a cold start, and middleware() handles that case too.
+ */
 async function getRegionMap(cacheId: string) {
   const { regionMap, regionMapUpdated } = regionMapCache
 
   if (!BACKEND_URL) {
-    throw new Error(
-      "Middleware.ts: Error fetching regions. Did you set up regions in your Medusa Admin and define a MEDUSA_BACKEND_URL environment variable? Note that the variable is no longer named NEXT_PUBLIC_MEDUSA_BACKEND_URL."
+    console.error(
+      "Middleware: MEDUSA_BACKEND_URL is not set. Set it in the Vercel project (build AND runtime). Falling back to the default region."
     )
+    return regionMap
   }
 
-  if (
-    !regionMap.keys().next().value ||
-    regionMapUpdated < Date.now() - 3600 * 1000
-  ) {
-    // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
-    const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
-      headers: {
-        "x-publishable-api-key": PUBLISHABLE_API_KEY!,
-      },
-      next: {
-        revalidate: 3600,
-        tags: [`regions-${cacheId}`],
-      },
-      cache: "force-cache",
-    }).then(async (response) => {
+  const isStale = regionMapUpdated < Date.now() - 3600 * 1000
+
+  if (!regionMap.keys().next().value || isStale) {
+    try {
+      // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
+      const response = await fetch(`${BACKEND_URL}/store/regions`, {
+        headers: {
+          "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+        },
+        next: {
+          revalidate: 3600,
+          tags: [`regions-${cacheId}`],
+        },
+        cache: "force-cache",
+      })
+
       const json = await response.json()
 
       if (!response.ok) {
-        throw new Error(json.message)
+        throw new Error(
+          `${response.status} ${json?.message ?? "unknown error"}`
+        )
       }
 
-      return json
-    })
+      const regions: HttpTypes.StoreRegion[] = json.regions
 
-    if (!regions?.length) {
-      throw new Error(
-        "No regions found. Please set up regions in your Medusa Admin."
-      )
-    }
+      if (!regions?.length) {
+        throw new Error(
+          "No regions found. Please set up regions in your Medusa Admin."
+        )
+      }
 
-    // Create a map of country codes to regions.
-    regions.forEach((region: HttpTypes.StoreRegion) => {
-      region.countries?.forEach((c) => {
-        regionMapCache.regionMap.set(c.iso_2 ?? "", region)
+      // Rebuild rather than merge, so a region whose countries changed does not
+      // leave stale country codes mapped to it.
+      const next = new Map<string, HttpTypes.StoreRegion>()
+      regions.forEach((region) => {
+        region.countries?.forEach((c) => {
+          next.set(c.iso_2 ?? "", region)
+        })
       })
-    })
 
-    regionMapCache.regionMapUpdated = Date.now()
+      regionMapCache.regionMap = next
+      regionMapCache.regionMapUpdated = Date.now()
+    } catch (error) {
+      // Logged unconditionally - this needs to be visible in Vercel's
+      // production logs, which is exactly where it matters.
+      console.error(
+        `Middleware: could not refresh the region map from ${BACKEND_URL}:`,
+        error instanceof Error ? error.message : error
+      )
+      // Deliberately not rethrown, and the previous map is kept.
+    }
   }
 
   return regionMapCache.regionMap
@@ -114,7 +145,12 @@ export async function middleware(request: NextRequest) {
 
   const regionMap = await getRegionMap(cacheId)
 
-  const countryCode = regionMap && (await getCountryCode(request, regionMap))
+  // Falls back to DEFAULT_REGION when the map is empty, which happens only if
+  // the backend was unreachable on a cold start. Routing optimistically to /ro
+  // keeps the URL structure intact and lets individual pages degrade on their
+  // own; the alternative is failing the request outright for every visitor.
+  const countryCode =
+    (regionMap && (await getCountryCode(request, regionMap))) || DEFAULT_REGION
 
   const urlHasCountryCode =
     countryCode && request.nextUrl.pathname.split("/")[1].includes(countryCode)
@@ -144,15 +180,12 @@ export async function middleware(request: NextRequest) {
   const queryString = request.nextUrl.search ? request.nextUrl.search : ""
 
   // If no country code is set, we redirect to the relevant region.
-  if (!urlHasCountryCode && countryCode) {
+  // countryCode is always truthy now (it falls back to DEFAULT_REGION above),
+  // so the old "no valid regions" 500 branch is gone on purpose: a misconfigured
+  // or briefly unreachable backend must not blank the storefront.
+  if (!urlHasCountryCode) {
     redirectUrl = `${request.nextUrl.origin}/${countryCode}${redirectPath}${queryString}`
     response = NextResponse.redirect(`${redirectUrl}`, 307)
-  } else if (!urlHasCountryCode && !countryCode) {
-    // Handle case where no valid country code exists (empty regions)
-    return new NextResponse(
-      "No valid regions configured. Please set up regions with countries in your Medusa Admin.",
-      { status: 500 }
-    )
   }
 
   return response
