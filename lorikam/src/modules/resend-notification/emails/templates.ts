@@ -3,9 +3,47 @@
 
 const BRAND = "Lorikam"
 
-function formatPrice(amount: number, currency: string): string {
-  const value = typeof amount === "number" ? amount : 0
-  return `${value.toFixed(2)} ${(currency || "RON").toUpperCase()}`
+/**
+ * Coerces whatever Medusa hands us for a money field into a number.
+ *
+ * This is not defensive programming for its own sake. Order totals are
+ * COMPUTED fields: the REST layer serialises them as plain numbers, but
+ * `query.graph` inside a subscriber returns Medusa's BigNumber objects. The
+ * previous implementation was `typeof amount === "number" ? amount : 0`, so
+ * every BigNumber silently became zero — and because it was silent, the order
+ * confirmation went out to customers reading "Total: 0.00 RON" while the line
+ * items above it showed the real prices. Verified on order #4: total 254 RON,
+ * email said 0.00.
+ *
+ * Falling back to 0 on something genuinely unparseable is still wrong, but at
+ * that point there is nothing better to print and the line items carry the
+ * real figures.
+ */
+function toAmount(amount: unknown): number {
+  if (typeof amount === "number") return Number.isFinite(amount) ? amount : 0
+  if (typeof amount === "string") {
+    const parsed = Number(amount)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  if (amount && typeof amount === "object") {
+    // BigNumber exposes the value under `numeric`; some serialisations carry
+    // it as a `value` string instead.
+    const candidate = (amount as { numeric?: unknown; value?: unknown })
+    for (const raw of [candidate.numeric, candidate.value]) {
+      if (raw !== undefined && raw !== null) {
+        const parsed = Number(raw)
+        if (Number.isFinite(parsed)) return parsed
+      }
+    }
+    // Last resort: BigNumber defines toString/valueOf.
+    const parsed = Number(amount)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return 0
+}
+
+function formatPrice(amount: unknown, currency: string): string {
+  return `${toAmount(amount).toFixed(2)} ${(currency || "RON").toUpperCase()}`
 }
 
 // Visitor-supplied text (the contact form) ends up both inside element bodies
@@ -207,7 +245,10 @@ function orderPlaced(data: any): EmailContent {
       const title = item.product_title || item.title || "Produs"
       const variant = item.variant_title || item.subtitle || ""
       const qty = item.quantity ?? 1
-      const unit = item.unit_price ?? 0
+      // Coerced the same way as the totals: unit_price is a plain number over
+      // REST but a BigNumber through query.graph, and `unit * qty` on a
+      // BigNumber yields NaN, which would print as 0.00.
+      const unit = toAmount(item.unit_price)
       return `<tr>
         <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
           <div style="font-weight:600;">${title}</div>
@@ -513,7 +554,10 @@ function orderPlacedMerchant(data: any): EmailContent {
       const title = item.product_title || item.title || "Produs"
       const variant = item.variant_title || item.subtitle || ""
       const qty = item.quantity ?? 1
-      const unit = item.unit_price ?? 0
+      // Coerced the same way as the totals: unit_price is a plain number over
+      // REST but a BigNumber through query.graph, and `unit * qty` on a
+      // BigNumber yields NaN, which would print as 0.00.
+      const unit = toAmount(item.unit_price)
       const customizations = (item.metadata?.customizations ?? {}) as Record<
         string,
         string
