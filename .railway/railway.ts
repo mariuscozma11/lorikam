@@ -151,7 +151,10 @@ export default defineRailway(() => {
       STORE_CORS: [
         "https://lorikam.com",
         "https://www.lorikam.com",
-        "https://lorikam-mariuscozmabe-gmailcoms-projects.vercel.app",
+        // Vercel's production alias for the project. Note this is the short
+        // one: the per-deployment URLs (lorikam-<hash>-...vercel.app) change on
+        // every deploy and are not worth listing.
+        "https://lorikam.vercel.app",
         "http://localhost:8000",
       ].join(","),
       ADMIN_CORS: "https://api.lorikam.com",
