@@ -13,7 +13,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     // Get products linked to a specific team
     const { data: teams } = await query.graph({
       entity: "team",
-      fields: ["id", "products.id"],
+      fields: ["id", "products.id", "products.status"],
       filters: {
         handle: team_handle,
         is_active: true,
@@ -24,7 +24,12 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       return res.json({ product_ids: [] })
     }
 
-    const productIds = teams[0].products?.map((p: any) => p.id) || []
+    // Drafts must not surface on the storefront, and the link join can't be
+    // filtered on the product's own columns — hence the filter here.
+    const productIds =
+      teams[0].products
+        ?.filter((p: any) => p?.status === "published")
+        .map((p: any) => p.id) || []
     return res.json({ product_ids: productIds })
   }
 

@@ -8,6 +8,19 @@ function formatPrice(amount: number, currency: string): string {
   return `${value.toFixed(2)} ${(currency || "RON").toUpperCase()}`
 }
 
+// Visitor-supplied text (the contact form) ends up both inside element bodies
+// and inside attributes like href="mailto:…", so it has to be escaped before it
+// is interpolated. `&` is replaced first, otherwise the entities produced by the
+// later replacements would get double-escaped.
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
 // Outgoing mail is send-only (no inbox behind the Resend sender), so every
 // email has to point people somewhere they'll actually be read.
 export const DEFAULT_CONTACT_EMAIL = "contact@lorikam.com"
@@ -206,8 +219,12 @@ function orderPlaced(data: any): EmailContent {
           : ""
       }
       ${
+        // Regions and currencies are configured tax-inclusive, so the line
+        // items and shipping above already contain the VAT. Labelled plainly
+        // "TVA" this row reads as an extra charge and the column stops adding
+        // up to Total; "din care TVA" says it is a breakdown, not an addition.
         order.tax_total != null
-          ? `<tr><td style="padding:2px 0;color:#52525b;">TVA</td><td style="padding:2px 0;text-align:right;">${formatPrice(order.tax_total, currency)}</td></tr>`
+          ? `<tr><td style="padding:2px 0;color:#52525b;">din care TVA</td><td style="padding:2px 0;text-align:right;">${formatPrice(order.tax_total, currency)}</td></tr>`
           : ""
       }
       <tr>
@@ -244,12 +261,12 @@ function contactMessage(data: any): EmailContent {
   const body = `
     <h1 style="margin:0 0 16px;font-size:20px;">${copy("contact-message", "heading", overrides, vars)}</h1>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;">
-      <tr><td style="padding:4px 0;color:#71717a;width:90px;">Nume</td><td style="padding:4px 0;font-weight:600;">${c.name || ""}</td></tr>
-      <tr><td style="padding:4px 0;color:#71717a;">Email</td><td style="padding:4px 0;"><a href="mailto:${c.email || ""}">${c.email || ""}</a></td></tr>
-      ${c.phone ? `<tr><td style="padding:4px 0;color:#71717a;">Telefon</td><td style="padding:4px 0;">${c.phone}</td></tr>` : ""}
+      <tr><td style="padding:4px 0;color:#71717a;width:90px;">Nume</td><td style="padding:4px 0;font-weight:600;">${escapeHtml(c.name || "")}</td></tr>
+      <tr><td style="padding:4px 0;color:#71717a;">Email</td><td style="padding:4px 0;"><a href="mailto:${escapeHtml(c.email || "")}">${escapeHtml(c.email || "")}</a></td></tr>
+      ${c.phone ? `<tr><td style="padding:4px 0;color:#71717a;">Telefon</td><td style="padding:4px 0;">${escapeHtml(c.phone)}</td></tr>` : ""}
     </table>
     <p style="margin:20px 0 6px;font-weight:600;">Mesaj</p>
-    <p style="margin:0;color:#52525b;font-size:15px;line-height:1.6;white-space:pre-wrap;">${(c.message || "").replace(/</g, "&lt;")}</p>
+    <p style="margin:0;color:#52525b;font-size:15px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(c.message || "")}</p>
   `
   return {
     subject: copy("contact-message", "subject", overrides, vars),

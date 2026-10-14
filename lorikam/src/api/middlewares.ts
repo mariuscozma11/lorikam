@@ -40,6 +40,7 @@ import {
 } from "./admin/content-pages/validators"
 import { UpsertSiteSettingSchema } from "./admin/site-settings/validators"
 import { ContactSchema } from "./store/contact/validators"
+import { rateLimitContact } from "./store/contact/rate-limit"
 
 export const GetColorsSchema = createFindParams()
 
@@ -159,7 +160,8 @@ export default defineMiddlewares({
     {
       matcher: "/store/contact",
       method: "POST",
-      middlewares: [validateAndTransformBody(ContactSchema)],
+      // Throttle first, so a flood is rejected before we spend anything on it.
+      middlewares: [rateLimitContact, validateAndTransformBody(ContactSchema)],
     },
   ],
 })

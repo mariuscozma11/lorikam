@@ -19,5 +19,14 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     throw new MedusaError(MedusaError.Types.NOT_FOUND, `Team not found`)
   }
 
-  return res.json({ team: teams[0] })
+  // products.* comes back whole (metadata included), so unpublished products
+  // linked to a team would be public here even though /store/products hides
+  // them. Filtered after the fetch because the link join can't be filtered on
+  // the product's own columns.
+  const team = teams[0]
+  const products = (team.products || []).filter(
+    (p: any) => p?.status === "published"
+  )
+
+  return res.json({ team: { ...team, products } })
 }

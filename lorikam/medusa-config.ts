@@ -41,6 +41,64 @@ const stripeProviders = process.env.STRIPE_API_KEY
     ]
   : [];
 
+// Infrastructure modules backed by Redis.
+//
+// `projectConfig.redisUrl` below only backs the server's session store. Per
+// Medusa's config reference, modules that connect to Redis "aren't affected and
+// need their own Redis configuration" — so without these three the production
+// boot silently falls back to in-memory implementations and logs:
+//
+//   Local Event Bus installed. This is not recommended for production.
+//   Locking module: Using "in-memory" as default.
+//
+// That matters here because every customer email is sent from a subscriber:
+// with the local event bus they run in-process with no persistence and no
+// retry, so a restart or crash between `order.placed` and the Resend call loses
+// that order confirmation permanently. Workflow state dies with the container
+// for the same reason, and in-memory locking is only safe at all because the
+// service is pinned to a single replica.
+//
+// Registered only when REDIS_URL is set, so `yarn dev` without a local Redis
+// still boots on the in-memory defaults — same conditional pattern as the
+// Stripe and Resend providers above.
+const redisInfraModules = process.env.REDIS_URL
+  ? [
+      {
+        resolve: "@medusajs/medusa/event-bus-redis",
+        options: {
+          redisUrl: process.env.REDIS_URL,
+          jobOptions: {
+            // Keep finished jobs for an hour so a failure is still inspectable,
+            // without letting the queue grow without bound.
+            removeOnComplete: { age: 3600, count: 1000 },
+            removeOnFail: { age: 3600, count: 1000 },
+          },
+        },
+      },
+      {
+        // Note the extra nesting: this module reads options.redis.redisUrl,
+        // unlike the event bus which takes options.redisUrl directly.
+        resolve: "@medusajs/medusa/workflow-engine-redis",
+        options: {
+          redis: { redisUrl: process.env.REDIS_URL },
+        },
+      },
+      {
+        resolve: "@medusajs/medusa/locking",
+        options: {
+          providers: [
+            {
+              resolve: "@medusajs/medusa/locking-redis",
+              id: "locking-redis",
+              is_default: true,
+              options: { redisUrl: process.env.REDIS_URL },
+            },
+          ],
+        },
+      },
+    ]
+  : [];
+
 if (isProduction) {
   const required = ["JWT_SECRET", "COOKIE_SECRET", "DATABASE_URL", "STORE_CORS", "ADMIN_CORS", "AUTH_CORS"];
   const missing = required.filter((k) => !process.env[k]);
@@ -49,6 +107,27 @@ if (isProduction) {
   }
   if (process.env.JWT_SECRET === "supersecret" || process.env.COOKIE_SECRET === "supersecret") {
     throw new Error("JWT_SECRET and COOKIE_SECRET must not use the insecure default in production");
+  }
+
+  // Warned about, not thrown on: the store still serves pages and takes carts
+  // without these, so refusing to boot would be worse than degraded operation.
+  // But each one fails silently and invisibly in production, which is why they
+  // are shouted about at startup instead.
+  //
+  //   RESEND_API_KEY missing -> notification falls back to the console provider,
+  //     so order confirmations are written to stdout and no customer gets mail.
+  //   STRIPE_API_KEY missing -> no payment provider is registered, so checkout
+  //     can only complete through the manual provider and no money moves.
+  //   REDIS_URL missing -> event bus, workflow engine and locking run in-memory;
+  //     emails are lost on restart and the service cannot be scaled past one.
+  const degraded: string[] = [];
+  if (!process.env.RESEND_API_KEY) degraded.push("RESEND_API_KEY (no customer emails will be sent)");
+  if (!process.env.STRIPE_API_KEY) degraded.push("STRIPE_API_KEY (no card payments possible)");
+  if (!process.env.REDIS_URL) degraded.push("REDIS_URL (in-memory event bus, emails lost on restart)");
+  if (degraded.length) {
+    console.warn(
+      `[medusa-config] Running in production WITHOUT: ${degraded.join("; ")}`
+    );
   }
 }
 
@@ -71,6 +150,7 @@ module.exports = defineConfig({
     },
   },
   modules: [
+    ...redisInfraModules,
     {
       resolve: "./src/modules/shipping-settings",
     },
